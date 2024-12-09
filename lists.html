@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="script.js"></script>
+</head>
+<body>
+<section>
+    <select id="playlistSelect" onchange="updateCurrentPlaylist()"></select>
+</section>
+
+<section>
+    <ul id="songList"></ul>
+</section>
+
+<script>
+    const listSelect = document.getElementById("playlistSelect");
+    const songListElement = document.getElementById("songList");
+    let currentListData = "";
+    let selectedSongIndex = 0;
+
+    async function fetchLists() {
+        const playlistsData = await GET("/lists/");
+        const listFiles = playlistsData.split("\n").sort();
+        renderListsSelect(listFiles);
+    }
+
+    const o = connectToFileWebSocket("/current/list.txt", data => {
+        currentListData = data;
+        renderSongList(data.split("\n"));
+    })
+
+    const songindex = connectToFileWebSocket("/current/songindex.txt", data => {
+        selectedSongIndex = parseInt(data);
+        let index = 0;
+        for (const li of songListElement.children) {
+            li.classList.toggle("selected", index++ === selectedSongIndex);
+        }
+    });
+
+    function renderListsSelect(listFiles) {
+        listSelect.innerHTML = "<option></option>";
+        listFiles.forEach(listFile => {
+            const option = document.createElement("option");
+            option.value = listFile;
+            option.textContent = listFile.replace(/\.[^/.]+$/, "") // Remove extension
+            listSelect.appendChild(option);
+        });
+    }
+
+    function renderSongList(songFiles) {
+        songListElement.innerHTML = "";
+        songFiles.forEach((songFile, index) => {
+            const listItem = document.createElement("li");
+            const div = document.createElement("div");
+            dir = songFile.replace(/(^|\/)[^\/]+$/, ""); // remove filename
+            if (dir) {
+                const dirspan = document.createElement("span");
+                dirspan.className = "dir";
+                dirspan.textContent = songFile.replace(/\/[^\/]+$/, ""); // remove filename
+                div.appendChild(dirspan);
+            }
+            const span = document.createElement("span");
+            span.textContent = songFile.replace(/^.+\/|\.[^/.]+$/, ""); // remove extension
+            div.appendChild(span);
+            listItem.appendChild(div);
+
+            const removeButton = document.createElement("button");
+            removeButton.textContent = "×";
+            removeButton.onclick = (event) => {
+                removeSongFromList(index);
+                event.stopPropagation();
+            }
+            listItem.appendChild(removeButton);
+            listItem.onclick = () => setCurrentSong(index, songFile);
+            songListElement.appendChild(listItem);
+        });
+    }
+
+    async function updateCurrentPlaylist() {
+        const listFile = listSelect.value;
+        if (listFile) {
+            currentListData = await GET(`/lists/${listFile}`);
+            listWS.send(currentListData);
+            fetchLists();
+        }
+    }
+
+    async function setCurrentSong(index, songFile) {
+        const currentSongData = await GET(`/songs/${songFile}`);
+        await PUT("/current/song.txt", currentSongData);
+        songindex.ws.send(`${index}`);
+    }
+
+    async function removeSongFromList(index) {
+        const list = currentListData.split("\n")
+        list.splice(index, 1);
+        o.ws.send(list.join('\n'));
+    }
+
+    fetchLists();
+    setInterval(fetchLists, 30000);
+</script>
+</body>

@@ -1,0 +1,106 @@
+html,
+iframe {
+    padding: 0;
+    margin: 0;
+}
+body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header, footer {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #333;
+}
+
+footer {
+    border-top: 1px solid #333;
+    border-bottom: none;
+    font-size: 0.8rem;
+}
+
+iframe {
+    border: 0;
+}
+
+h1, h2 {
+    margin: 0 0 10px 0;
+    color: #ffffff;
+}
+
+main {
+    padding: 20px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #333;
+    margin-bottom: 5px;
+    background-color: #1e1e1e;
+    border-radius: 5px;
+    white-space: pre;
+    cursor: pointer;
+}
+
+li.selected {
+    background-color: #0044cc;
+    color: #ffffff;
+}
+
+li span.dir {
+    display: block;
+    font-size: 0.8rem;
+}
+
+li span.verse {
+    position: absolute;
+    font-size: 0.8rem;
+    right: .5rem;
+    color: #717171;
+}
+
+li button {
+    background-color: #444;
+    color: #ffffff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    opacity: 0;
+}
+
+li:hover button {
+    opacity: 1;
+}
+
+li button:hover {
+    background-color: #555;
+}
+
+input[type="text"], select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: #555;
+}
