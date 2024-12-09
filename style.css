@@ -61,6 +61,10 @@ li.selected {
     color: #ffffff;
 }
 
+div {
+    flex-grow: 1;
+}
+
 li span.dir {
     display: block;
     font-size: 0.8rem;

@@ -10,12 +10,30 @@ Just simple lyrics presentation from txt files and setlists.
 - Sending message to websocket, rewrites that filepath
 - HTTP `GET /songs/` will list all song files recursively, even from subdirs. Same for `/lists/`
 - HTTP `PUT /songs/Amazing Grace.txt` will rewrite that file with request body content, and broadcast new content to connected websocket listeners
+- no framework, no json, no sql, just plain good old http server, filesystem, html, js, css
+- recognizes OpenLyrics XML, OpenSong XML, INI style txt formats
 
-# Run
+# Run server
 
+## Go
+
+    cd server-go/
+    go mod tidy
+    go build server.go
+    cd ..
+    server-go/server
+
+## NodeJS
+
+    cd server-js/
     npm install
-    node server.js
-    open http://127.0.0.1:5005/
+    cd ..
+    node server-js/server.js
+    
+# Python
+    
+    pip3 install flask flask-sock
+    python3 server-py/server.py
 
 # Usage with other software
 
@@ -23,6 +41,7 @@ Just simple lyrics presentation from txt files and setlists.
 
 1. Create text source
 2. Set it to read current/verse.txt
+3. Create Browser Docks for pages `http://127.0.0.1:5005/songs.html`, `/lists.html` and `/lyrics.html`
 
 ## Browser
 
@@ -34,10 +53,15 @@ Just simple lyrics presentation from txt files and setlists.
 - Listen to messages on websocket `ws://127.0.0.1:5005/current/verse.txt`
 - Poll requests using HTTP GET `http://127.0.0.1:5005/current/verse.txt`
 
-# TODO
+# Todo
 
-- websocket listen to changes on dirs `songs/` and `lists/`
-- search in song content
-- button to save setlist
-- user extensions
-- stage view html
+- [ ] stage view html
+- [ ] mobile layout
+- [ ] search in song content
+- [ ] button to save setlist
+- [ ] custom user js, css
+- [ ] parse more song formats
+- [ ] drag and drop
+- [ ] installable gui app
+- [ ] song editor textarea
+- [ ] websocket listen to changes on dirs `songs/` and `lists/`

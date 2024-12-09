@@ -61,3 +61,84 @@ function handleKeyDown(event) {
         hideLyric();
     }
 }
+
+function parseOpenSongLyrics(s) {
+    const verses = {};
+    let key = 'V';
+    let chords = '';
+
+    s.split('\n').forEach((line) => {
+        if (!line) {
+            return; // skip empty lines
+        } else if (line[0] === '[') { // verse shortcut
+            key = line.replace(/[\[\]]/g, '').toUpperCase();
+            chords = '';
+        } else if (line[0] === '.') { // chords
+            chords = line.slice(1) + ' '; // last space is for simple parsing
+        } else if (' 123456789'.includes(line[0])) {
+            const first = line[0];
+            line = line.slice(1).split(''); // convert line to an array
+            let offset = 0;
+            let chord = null;
+            // insert chords into the line
+            for (let i = 0; i < chords.length; i++) {
+                const c = chords[i];
+                if (c !== ' ') {
+                    if (chord === null) {
+                        chord = '[' + c; // open
+                    } else {
+                        chord += c; // append
+                    }
+                } else if (chord) {
+                    chord += ']'; // close
+                    line.splice(offset, 0, chord);
+                    offset += chord.length;
+                    chord = null;
+                } else {
+                    offset += 1; // spaces from the start
+                }
+            }
+            // remove underscores (used for indenting) and squash spaces
+            line = line.join('').replace(/_/g, '').replace(/\s+/g, ' ').trim();
+            // determine the key for this line
+            const lineKey = first !== ' ' ? key + first : key;
+            if (!verses[lineKey]) {
+                verses[lineKey] = [];
+            }
+            verses[lineKey].push(line);
+        } else if (line[0] === ';') { // comment
+            return;
+        } else if (line[0] === '|') { // comment with content
+            const lineKey = key + (line[0] !== ' ' ? line[0] : '');
+            if (!verses[lineKey]) {
+                verses[lineKey] = [];
+            }
+            verses[lineKey].push(line.slice(1));
+        } else {
+            throw new Error(`Unknown prefix ${line}`);
+        }
+    });
+    for (const [key, lines] of Object.entries(verses)) {
+        verses[key] = lines.join('\n');
+    }
+    return verses;
+}
+
+function parseOpenSongXml(xml) {
+    const lyricsText = xml.getElementsByTagName("lyrics")[0].textContent.trim();
+    const verses = parseOpenSongLyrics(lyricsText);
+    const verseOrder = xml.getElementsByTagName("presentation")[0].textContent.trim().toUpperCase().split(/\s+/);
+    return { verses, verseOrder };
+}
+
+function parseOpenLyricsXml(xml) {
+    const ns = "http://openlyrics.info/namespace/2009/song";
+    const verseOrder = xml.getElementsByTagNameNS(ns, "verseOrder")[0].textContent.trim().toUpperCase().split(/\s+/);
+    const verses = {};
+    const verse_array = xml.getElementsByTagNameNS(ns, "verse");
+    for (const verse of verse_array) {
+        const name = verse.getAttribute("name").toUpperCase();
+        verses[name] = verse.getElementsByTagNameNS(ns, "lines")[0].innerHTML;
+    }
+    return { verses, verseOrder };
+}

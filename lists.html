@@ -64,13 +64,30 @@
             div.appendChild(span);
             listItem.appendChild(div);
 
-            const removeButton = document.createElement("button");
-            removeButton.textContent = "×";
-            removeButton.onclick = (event) => {
+            let button = document.createElement("button");
+            button.textContent = "↑";
+            button.onclick = (event) => {
+                songMoveUp(index);
+                event.stopPropagation();
+            }
+            listItem.appendChild(button);
+
+            button = document.createElement("button");
+            button.textContent = "↓";
+            button.onclick = (event) => {
+                songMoveDown(index);
+                event.stopPropagation();
+            }
+            listItem.appendChild(button);
+
+            button = document.createElement("button");
+            button.textContent = "×";
+            button.onclick = (event) => {
                 removeSongFromList(index);
                 event.stopPropagation();
             }
-            listItem.appendChild(removeButton);
+            listItem.appendChild(button);
+
             listItem.onclick = () => setCurrentSong(index, songFile);
             songListElement.appendChild(listItem);
         });
@@ -89,6 +106,24 @@
         const currentSongData = await GET(`/songs/${songFile}`);
         await PUT("/current/song.txt", currentSongData);
         songindex.ws.send(`${index}`);
+    }
+
+    async function songMoveUp(index) {
+        if (index <= 0) return;
+        const list = currentListData.split("\n")
+        const tmp = list[index];
+        list[index] = list[index-1];
+        list[index-1] = tmp;
+        o.ws.send(list.join('\n'));
+    }
+
+    async function songMoveDown(index) {
+        const list = currentListData.split("\n")
+        if (index >= list.length) return;
+        const tmp = list[index];
+        list[index] = list[index+1];
+        list[index+1] = tmp;
+        o.ws.send(list.join('\n'));
     }
 
     async function removeSongFromList(index) {
