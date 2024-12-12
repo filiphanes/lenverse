@@ -88,10 +88,15 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 		ext := strings.ToLower(filepath.Ext(filePath))
 		contentType := mime.TypeByExtension(ext)
 		if contentType == "" {
-			contentType = "application/octet-stream"
+			if ext == ".md" {
+				contentType = "text/markdown"
+			} else {
+				contentType = "application/octet-stream"
+			}
 		}
 
 		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(content)
 	} else if r.Method == http.MethodPut {
 		body, err := io.ReadAll(r.Body)

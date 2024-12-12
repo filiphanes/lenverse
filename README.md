@@ -2,7 +2,7 @@
 
 Just simple lyrics presentation from txt files and setlists.
 
-- Song lyrics are in empty line delimited files in `songs/` directory
+- Song verses are in empty line delimited files in `songs/` directory or OpenLyrics xml, OpenSong xml
 - Setlists are in `lists` directory, each line is relative path from `songs/` folder
 - In `current/` directory there is currently selected list, songs, songindex, verse, verseindex
 - Connect to websocket `ws://127.0.0.1:5005/current/verse.txt` to receive updates on current verse.
@@ -11,7 +11,6 @@ Just simple lyrics presentation from txt files and setlists.
 - HTTP `GET /songs/` will list all song files recursively, even from subdirs. Same for `/lists/`
 - HTTP `PUT /songs/Amazing Grace.txt` will rewrite that file with request body content, and broadcast new content to connected websocket listeners
 - no framework, no json, no sql, just plain good old http server, filesystem, html, js, css
-- recognizes OpenLyrics XML, OpenSong XML, INI style txt formats
 
 # Run server
 
@@ -41,7 +40,7 @@ Just simple lyrics presentation from txt files and setlists.
 
 1. Create text source
 2. Set it to read current/verse.txt
-3. Create Browser Docks for pages `http://127.0.0.1:5005/songs.html`, `/lists.html` and `/lyrics.html`
+3. Create Browser Docks for pages `http://127.0.0.1:5005/songs.html`, `/lists.html` and `/verses.html`
 
 ## Browser
 
@@ -55,13 +54,10 @@ Just simple lyrics presentation from txt files and setlists.
 
 # Todo
 
-- [ ] stage view html
 - [ ] mobile layout
 - [ ] search in song content
-- [ ] button to save setlist
 - [ ] custom user js, css
 - [ ] parse more song formats
-- [ ] drag and drop
 - [ ] installable gui app
 - [ ] song editor textarea
 - [ ] websocket listen to changes on dirs `songs/` and `lists/`

@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <head>
-    <link rel="stylesheet" href="/style.css" />
+    <title>Songs</title>
+    <link rel="stylesheet" href="style.css" />
     <script src="script.js"></script>
+	<link rel="stylesheet" href="custom.css" />
+	<script src="custom.js"></script>
 </head>
 <body>
 <section>
@@ -38,12 +41,7 @@
             span.textContent = songFile.replace(/^.+\/|\.[^/.]+$/, ""); // remove extension
             div.appendChild(span);
             listItem.appendChild(div);
-
-            const addButton = document.createElement("button");
-            addButton.textContent = "+";
-            addButton.onclick = () => addToList(songFile);
-            listItem.appendChild(addButton);
-
+            appendButton(listItem, "+", () => addToList(songFile));
             songListElement.appendChild(listItem);
         });
     }

@@ -1,4 +1,6 @@
+bin/
 current/
 lists/
 songs/
 node_modules/
+.DS_Store

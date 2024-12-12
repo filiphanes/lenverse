@@ -1,37 +1,44 @@
 <!DOCTYPE html>
-<head>
-    <title>LenVerse</title>
-    <script src="/script.js"></script>
-    <style>
-        body {
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-        }
 
-        #currentVerse {
-            font-size: 5vh;
-            text-align: center;
-            white-space: pre;
-        }
-        .verse {
-            display: none;
-        }
-    </style>
+<head>
+	<title>Main</title>
+	<style>
+		body {
+			margin: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			background-color: #000;
+			color: #fff;
+			font-family: Arial, sans-serif;
+		}
+
+		#currentVerse {
+			font-size: 5vw;
+			text-align: center;
+			white-space: pre;
+		}
+
+		.verse,
+		.chord {
+			display: none;
+		}
+	</style>
+	<script src="script.js"></script>
+	<link rel="stylesheet" href="custom.css" />
+	<script src="custom.js"></script>
 </head>
+
 <body>
-<section>
-    <div id="currentVerse"></div>
-</section>
-<script>
-    const currentVerseElement = document.getElementById("currentVerse");
-    connectToFileWebSocket("/current/verse.txt", data => {
-        currentVerseElement.innerHTML = data;
-    });
-</script>
+	<section>
+		<div id="currentVerse"></div>
+	</section>
+	<script>
+		HOST = "127.0.0.1:5005";
+		const currentVerseElement = document.getElementById("currentVerse");
+		connectToFileWebSocket("/current/verse.txt", data => {
+			currentVerseElement.innerHTML = data;
+		});
+	</script>
 </body>

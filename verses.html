@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+
+<head>
+	<title>Verses</title>
+	<link rel="stylesheet" href="style.css" />
+	<script src="script.js"></script>
+	<link rel="stylesheet" href="custom.css" />
+	<script src="custom.js"></script>
+</head>
+
+<body>
+	<ol id="versesList"></ol>
+	<section id="controls">
+		<button title="Prev" onclick="selectVerse(verseIndex-1)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M744-160 280-624v264h-80v-400h400v80H336l464 464-56 56Z"/></svg></button>
+		<button title="Hide" onclick="toggleHidden()"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="m791-55-91-91q-49 32-104.5 49T480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-60 17-115.5T146-700l-91-91 57-57 736 736-57 57ZM480-160q43 0 83.5-11t78.5-33L204-642q-22 38-33 78.5T160-480q0 133 93.5 226.5T480-160Zm334-100-58-58q22-38 33-78.5t11-83.5q0-133-93.5-226.5T480-800q-43 0-83.5 11T318-756l-58-58q49-32 104.5-49T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 60-17 115.5T814-260ZM537-537ZM423-423Z"/></svg></button>
+		<button title="Next" onclick="selectVerse(verseIndex+1)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M360-200v-80h264L160-744l56-56 464 464v-264h80v400H360Z"/></svg></button>
+	</section>
+
+	<script>
+		const versesListElement = document.getElementById("versesList");
+		let verses = [];
+		let verseIndex = 0;
+		let hidden = false;
+
+		connectToFileWebSocket("/current/song.txt", data => {
+			verses = parseSong(data);
+			renderVerses();
+		});
+
+		const updateVerseIndex = connectToFileWebSocket("/current/verseindex.txt", data => {
+			verseIndex = parseInt(data);
+			let i = 0;
+			for (const li of versesListElement.children) {
+				li.classList.toggle("current", i++ === verseIndex);
+			}
+		});
+
+		function renderVerses() {
+			versesListElement.innerHTML = "";
+			verses.forEach((verse, i) => {
+				const listItem = document.createElement("li");
+				listItem.innerHTML = verse;
+				listItem.classList.toggle("current", i === verseIndex);
+				listItem.onclick = () => selectVerse(i);
+				versesListElement.appendChild(listItem);
+			});
+		}
+
+		async function selectVerse(index) {
+			if (index < 0 || index >= verses.length) return;
+			verseIndex = index;
+			updateVerseIndex(`${index}`);
+			if (hidden) return;
+			// PUT("/current/verse.html", verses[verseIndex]);
+
+			// Make plain text version
+			let txt = "";
+			for (const node of versesListElement.children[index].childNodes) {
+				if (node.nodeName === "#text") {
+					txt += node.textContent;
+				}
+			}
+			PUT("/current/verse.txt", txt);
+		}
+		
+		async function toggleHidden() {
+			hidden = !hidden;
+			if (hidden) {
+				// PUT("/current/verse.html", "");
+				PUT("/current/verse.txt", "");
+			} else {
+				selectVerse(verseIndex);
+			}
+		}
+
+		function handleKeyDown(event) {
+			if (event.key === "ArrowUp" && verseIndex > 0) {
+				selectVerse(verseIndex - 1);
+			} else if (event.key === "ArrowDown" && verseIndex < verses.length - 1) {
+				selectVerse(verseIndex + 1);
+			} else if (event.key === "H" || event.key === "h") {
+				toggleHidden();
+			}
+		}
+
+		document.addEventListener("keydown", handleKeyDown);
+	</script>
+</body>
