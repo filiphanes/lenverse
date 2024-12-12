@@ -21,7 +21,7 @@
 
     async function fetchSongs() {
         const data = await GET("/songs/");
-        const songFiles = data.split("\n").sort(collator.compare);
+        const songFiles = data.split("\n").filter(s=>s).sort(collator.compare);
         renderSongList(songFiles);
     }
 
@@ -65,7 +65,7 @@
     async function addToList(songFile) {
         let currentListData = await GET("/current/list.txt");
         console.log("Adding song to list:", songFile);
-        await PUT("/current/list.txt", currentListData+'\n'+songFile);
+        await PUT("/current/list.txt", currentListData.trim()+'\n'+songFile);
     }
 
     fetchSongs();

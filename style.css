@@ -25,33 +25,6 @@ footer {
 	font-size: 0.8rem;
 }
 
-#controls {
-	display: flex;
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	justify-content: space-between;
-	align-items: center;
-	width: 100%;
-}
-
-#controls button {
-	height: 3rem;
-	flex-grow: 2;
-	background-color: #333;
-	color: #ffffff;
-	border: none;
-	padding: 5px 10px;
-	cursor: pointer;
-}
-#controls button svg {
-	fill: white;
-}
-
-#controls button:hover {
-	background-color: #555;
-}
-
 iframe {
 	border: 0;
 }
@@ -152,4 +125,36 @@ input[type="text"]:focus,
 select:focus {
 	outline: none;
 	border-color: #555;
+}
+
+#controls {
+	display: flex;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+}
+
+#controls button {
+	height: 3rem;
+	flex-grow: 2;
+	background-color: #333;
+	color: #ffffff;
+	border: none;
+	padding: 5px 10px;
+	cursor: pointer;
+}
+
+#controls button.danger svg {
+	fill: red;
+}
+
+#controls button svg {
+	fill: white;
+}
+
+#controls button:hover {
+	background-color: #555;
 }

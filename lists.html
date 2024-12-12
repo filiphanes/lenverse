@@ -35,7 +35,7 @@
 		}
 
 		const updateCurrentList = connectToFileWebSocket("/current/list.txt", data => {
-			currentList = data.split("\n");
+			currentList = data.split("\n").filter(a=>a);
 			renderSongList(currentList);
 		})
 
@@ -48,7 +48,6 @@
 		});
 
 		function renderListsSelect(listFiles) {
-			listSelect.innerHTML = "<option></option>";
 			listFiles.forEach(listFile => {
 				const option = document.createElement("option");
 				option.value = listFile;
@@ -81,6 +80,7 @@
 				div.appendChild(span);
 				listItem.appendChild(div);
 
+				/* 
 				appendButton(listItem, "↑", (event) => {
 					moveSong(index, index-1);
 					event.stopPropagation();
@@ -89,6 +89,7 @@
 					moveSong(index, index+1);
 					event.stopPropagation();
 				})
+				*/
 				appendButton(listItem, "×", (event) => {
 					removeSongFromList(index);
 					event.stopPropagation();
