@@ -24,7 +24,7 @@ jobs:
         run: |
           cd server
           go mod tidy
-          for GOOS in windows linux mac; do
+          for GOOS in windows linux darwin; do
             for GOARCH in amd64 arm64; do
               output_name=server-$GOOS-$GOARCH
               if [ "${{ matrix.os }}" == "windows" ]; then
@@ -42,7 +42,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: packaged-binaries
+          name: lenverse-windows-mac-linux
           path: |
             songs/AmazingGrace.txt
             index.html
