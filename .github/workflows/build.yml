@@ -27,13 +27,13 @@ jobs:
         run: |
           cd server/
           go mod tidy
-          for os in windows linux mac; do
-            for arch in amd64 arm64; do
+          for GOOS in windows linux mac; do
+            for GOARCH in amd64 arm64; do
+              output_name=server-$GOOS-$GOARCH
               if [ "${{ matrix.os }}" == "windows" ]; then
-                go build -o ../lenverse-$output_name-$os-$arch.exe
-              else
-                go build -o ../lenverse-$output_name-$os-$arch
+                output_name=$output_name.exe
               fi
+              go build -o ../$output_name server.go
             endfor
           endfor
           
