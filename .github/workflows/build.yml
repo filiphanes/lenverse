@@ -1,4 +1,4 @@
-name: Go Build and Package
+name: Build
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build, Package, and Cross-Compile
+    name: Compile&Package
     runs-on: ubuntu-latest
 
     strategy:
@@ -26,7 +26,7 @@ jobs:
           go-version: 1.23  # Set your desired Go version
 
       - name: Install Dependencies
-        run: go mod tidy
+        run: cd server/ && go mod tidy
 
       - name: Build for ${{ matrix.os }}-${{ matrix.arch }}
         env:
@@ -34,18 +34,19 @@ jobs:
           GOARCH: ${{ matrix.arch }}
         run: |
           mkdir -p dist/${{ matrix.os }}-${{ matrix.arch }}
-          output_name=myapp-${{ matrix.os }}-${{ matrix.arch }}
+          output_name=lenverse-${{ matrix.os }}-${{ matrix.arch }}
           if [ "${{ matrix.os }}" == "windows" ]; then
             output_name=$output_name.exe
           fi
-          go build -o dist/${{ matrix.os }}-${{ matrix.arch }}/$output_name
+          cd server/
+          go build -o ../dist/${{ matrix.os }}-${{ matrix.arch }}/$output_name
           
-      - name: Copy Additional Files
+      - name: Copy Files
         run: |
           cp -r ./config dist/${{ matrix.os }}-${{ matrix.arch }}/ || true
           cp songs/AmazingGrace.txt index.html songs.html lists.html verses.html main.html README.md script.js stage.html style.css favicon.png dist/${{ matrix.os }}-${{ matrix.arch }}/ || true
 
-      - name: Create ZIP Archive
+      - name: Create ZIP
         run: |
           cd dist/${{ matrix.os }}-${{ matrix.arch }}
           zip -r ../${{ matrix.os }}-${{ matrix.arch }}.zip ./*
