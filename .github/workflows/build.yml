@@ -31,8 +31,8 @@ jobs:
                 output_name=$output_name.exe
               fi
               go build -o ../$output_name server.go
-            endfor
-          endfor
+            done
+          done
           
       - name: Copy Files
         run: |
