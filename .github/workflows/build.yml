@@ -27,18 +27,13 @@ jobs:
           for GOOS in windows linux darwin; do
             for GOARCH in amd64 arm64; do
               output_name=server-$GOOS-$GOARCH
-              if [ "${{ matrix.os }}" == "windows" ]; then
+              if [ "${{ os }}" == "windows" ]; then
                 output_name=$output_name.exe
               fi
               go build -o ../$output_name server.go
             done
           done
           
-      - name: Copy Files
-        run: |
-          cp -r ./config dist/${{ matrix.os }}-${{ matrix.arch }}/ || true
-          cp songs/AmazingGrace.txt index.html songs.html lists.html verses.html main.html README.md script.js stage.html style.css favicon.png dist/${{ matrix.os }}-${{ matrix.arch }}/ || true
-
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -15,11 +16,7 @@ import (
 )
 
 var (
-	baseDir    = "."
-	songsDir   = filepath.Join(baseDir, "songs")
-	listsDir   = filepath.Join(baseDir, "lists")
-	currentDir = filepath.Join(baseDir, "current")
-
+	baseDir     = "."
 	connections = make(map[string][]*websocket.Conn)
 	mu          sync.Mutex
 
@@ -35,7 +32,7 @@ func listFilesRecursive(directory string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() {
+		if !d.IsDir() && !strings.HasPrefix(path, ".") {
 			relPath, _ := filepath.Rel(directory, path)
 			files = append(files, relPath)
 		}
@@ -45,7 +42,8 @@ func listFilesRecursive(directory string) ([]string, error) {
 }
 
 // Serve file lists as plain text
-func handleFileList(dir string, w http.ResponseWriter, r *http.Request) {
+func handleFileList(w http.ResponseWriter, r *http.Request) {
+	dir := filepath.Join(baseDir, r.URL.Path)
 
 	files, err := listFilesRecursive(dir)
 	if err != nil {
@@ -65,22 +63,34 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Check if this is a WebSocket upgrade request
 	if websocket.IsWebSocketUpgrade(r) {
-		handleWebSocket(filePath, w, r)
+		log.Println("WS", r.URL.Path)
+		handleWebSocket(w, r)
 		return
 	}
+	log.Println(r.Method, r.URL.Path)
 
 	// Otherwise, handle as an HTTP file request
 	if r.Method == http.MethodGet {
-		if filePath == songsDir || filePath == listsDir || filePath == currentDir {
-			handleFileList(filePath, w, r)
-			return
-		} else if r.URL.Path == "/" {
-			filePath = "index.html"
+		if r.URL.Path == "/" {
+			filePath = filepath.Join(baseDir, "index.html")
 		}
 
-		content, err := os.ReadFile(filePath)
+		stat, err := os.Stat(filePath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		// Handle recursive directory listing
+		if stat.IsDir() {
+			handleFileList(w, r)
+			return
+		}
+
+		// Handle reading regular file
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -99,6 +109,7 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(content)
 	} else if r.Method == http.MethodPut {
+		// TODO: don't allow writing to any file
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -114,7 +125,9 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handle WebSocket connections
-func handleWebSocket(filePath string, w http.ResponseWriter, r *http.Request) {
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	filePath := filepath.Join(baseDir, r.URL.Path)
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -169,7 +182,7 @@ func main() {
 	http.HandleFunc("/", handleFileOrWebSocket)
 
 	port := 5005
-	fmt.Printf("Server running on http://127.0.0.1:%d/", port)
+	log.Printf("Server running on http://127.0.0.1:%d/\n", port)
 	if err := http.ListenAndServe(":5005", nil); err != nil {
 		println("Error starting server:", err)
 	}

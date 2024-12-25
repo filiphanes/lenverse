@@ -4,8 +4,6 @@
 	<title>Verses</title>
 	<link rel="stylesheet" href="style.css" />
 	<script src="script.js"></script>
-	<link rel="stylesheet" href="custom.css" />
-	<script src="custom.js"></script>
 </head>
 
 <body>
@@ -29,11 +27,8 @@
 		});
 
 		const updateVerseIndex = connectToFileWebSocket("/current/verseindex.txt", data => {
-			verseIndex = parseInt(data);
-			let i = 0;
-			for (const li of versesListElement.children) {
-				li.classList.toggle("current", i++ === verseIndex);
-			}
+			const index = parseInt(data);
+			selectVerse(index, true);
 		});
 
 		function renderVerses() {
@@ -47,12 +42,15 @@
 			});
 		}
 
-		async function selectVerse(index) {
-			if (index < 0 || index >= verses.length) return;
+		async function selectVerse(index, dontUpdate) {
+			if (index < 0 || index >= verses.length || verseIndex == index) return;
 			verseIndex = index;
-			updateVerseIndex(`${index}`);
+			// Clear and set current verse class
+			for (const li of versesListElement.children) li.classList.remove("current");
+			versesListElement.children[index].classList.add("current");
+			versesListElement.children[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+			if (!dontUpdate) updateVerseIndex(`${index}`);
 			if (hidden) return;
-			// PUT("/current/verse.html", verses[verseIndex]);
 
 			// Make plain text version
 			let txt = "";
@@ -62,6 +60,7 @@
 				}
 			}
 			PUT("/current/verse.txt", txt);
+			// PUT("/current/verse.html", verses[verseIndex]);
 		}
 		
 		async function toggleHidden() {
@@ -78,8 +77,10 @@
 		function handleKeyDown(event) {
 			if (event.key === "ArrowUp" && verseIndex > 0) {
 				selectVerse(verseIndex - 1);
+				event.preventDefault();
 			} else if (event.key === "ArrowDown" && verseIndex < verses.length - 1) {
 				selectVerse(verseIndex + 1);
+				event.preventDefault();
 			} else if (event.key === "H" || event.key === "h") {
 				toggleHidden();
 			}

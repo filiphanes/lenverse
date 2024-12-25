@@ -41,8 +41,6 @@
 			display: none;
 		}
 	</style>
-	<link rel="stylesheet" href="custom.css" />
-	<script src="custom.js"></script>
 </head>
 
 <body>
@@ -60,6 +58,7 @@
 				}
 			});
 		}
+
 		connectToFileWebSocket("/current/verseindex.txt", data => {
 			index = parseInt(data);
 			scrollToIndex(index);
