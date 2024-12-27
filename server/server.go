@@ -180,10 +180,13 @@ func broadcastUpdate(filePath, content string) {
 
 func main() {
 	http.HandleFunc("/", handleFileOrWebSocket)
+	listen := os.Getenv("LISTEN")
+	if len(listen) == 0 {
+		listen = "127.0.0.1:5005"
+	}
 
-	port := 5005
-	log.Printf("Server running on http://127.0.0.1:%d/\n", port)
-	if err := http.ListenAndServe(":5005", nil); err != nil {
+	log.Printf("Server running on http://%s/\n", listen)
+	if err := http.ListenAndServe(listen, nil); err != nil {
 		println("Error starting server:", err)
 	}
 }

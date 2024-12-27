@@ -32,7 +32,6 @@ iframe {
 h1,
 h2 {
 	margin: 0 0 10px 0;
-	color: #ffffff;
 }
 
 main {
@@ -119,6 +118,7 @@ select {
 	border-radius: 5px;
 	background-color: #1e1e1e;
 	color: #ffffff;
+	box-sizing: border-box;
 }
 
 input[type="text"]:focus,
@@ -141,7 +141,6 @@ select:focus {
 	height: 3rem;
 	flex-grow: 2;
 	background-color: #333;
-	color: #ffffff;
 	border: none;
 	padding: 5px 10px;
 	cursor: pointer;
@@ -157,4 +156,16 @@ select:focus {
 
 #controls button:hover {
 	background-color: #555;
+}
+
+#disconnected {
+	display: block;
+	position: fixed;
+	fill: red;
+	top: 1rem;
+	right: 1rem;
+}
+
+body.connected #disconnected {
+	display: none;
 }

@@ -19,20 +19,21 @@ Just simple lyrics presentation from txt files and setlists.
     cd server-go/
     go mod tidy
     go build server.go
-    cd ..
-    server-go/server
+    server/server
+    # or using custom LISTEN address and port, default is 127.0.0.1:5005
+    LISTEN=0.0.0.0:8080 server/server
 
 ## NodeJS
 
-    cd server-js/
+    cd server/
     npm install
-    cd ..
-    node server-js/server.js
+    node server.js
     
 # Python
     
+    cd server/
     pip3 install flask flask-sock
-    python3 server-py/server.py
+    python3 server.py
 
 # Usage with other software
 
@@ -56,8 +57,8 @@ Just simple lyrics presentation from txt files and setlists.
 
 - [ ] mobile layout
 - [ ] search in song content
-- [ ] custom user js, css
 - [ ] parse more song formats
 - [ ] installable gui app
 - [ ] song editor textarea
+- [ ] watch filesystem changes and broadcast them to ws clients
 - [ ] websocket listen to changes on dirs `songs/` and `lists/`

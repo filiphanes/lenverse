@@ -6,6 +6,7 @@ function connectToFileWebSocket(path, onUpdateCallback) {
 		ws = new WebSocket(`ws://${HOST}${path}`);
 		ws.onopen = () => {
 			console.log("WebSocket connected to", path);
+			document.body.classList.add("connected")
 		};
 
 		if (typeof onUpdateCallback === "function") {
@@ -17,6 +18,7 @@ function connectToFileWebSocket(path, onUpdateCallback) {
 		ws.onclose = () => {
 			console.log("WebSocket connection to ", path, "closed");
 			setTimeout(reconnect, 1000);
+			document.body.classList.remove("connected")
 		};
 
 		ws.onerror = (error) => {

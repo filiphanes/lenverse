@@ -5,28 +5,27 @@
     <script src="script.js"></script>
 </head>
 <body>
-<section>
-    <input type="text" id="searchInput" placeholder="Search..." oninput="filterSongs()" />
-</section>
-
-<section>
-    <ul id="songList"></ul>
-</section>
+<input type="text" id="searchInput" placeholder="Search..." oninput="filterSongs()" style="width: calc(100% - 2rem);" />
+<input type="checkbox" id="searchContent" onchange="filterSongs()" title="Search in content" />
+<ul id="songList"></ul>
 <script>
     const songListElement = document.getElementById("songList");
     const searchInput = document.getElementById("searchInput");
+    const searchContent = document.getElementById("searchContent");
+    const cachedSongs = {};
     const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
 
     async function fetchSongs() {
         const data = await GET("/songs/");
-        const songFiles = data.split("\n").filter(s=>s).sort(collator.compare);
+        const songFiles = data.trim().split("\n").sort(collator.compare);
         renderSongList(songFiles);
     }
 
     function renderSongList(songFiles) {
         songListElement.innerHTML = "";
         songFiles.forEach(songFile => {
-            const listItem = document.createElement("li");
+            const li = document.createElement("li");
+            li.dataset.file = songFile;
             const div = document.createElement("div");
             dir = songFile.replace(/(^|\/)[^\/]+$/, ""); // remove filename
             if (dir) {
@@ -38,26 +37,42 @@
             const span = document.createElement("span");
             span.textContent = songFile.replace(/^.+\/|\.[^/.]+$/, ""); // remove extension
             div.appendChild(span);
-            listItem.appendChild(div);
-            appendButton(listItem, "+", () => addToList(songFile));
-            songListElement.appendChild(listItem);
+            li.appendChild(div);
+            appendButton(li, "+", () => addToList(songFile));
+            songListElement.appendChild(li);
         });
+        filterSongs();
     }
 
-    function filterSongs() {
+    async function filterSongs() {
         const query = normalizeText(searchInput.value);
-        const listItems = songListElement.querySelectorAll("li");
-        listItems.forEach(item => {
-            const text = normalizeText(item.textContent);
-            item.style.display = text.includes(query) ? "" : "none";
-        });
+        for (const li of songListElement.children) {
+            li.style.display = normalizeText(li.textContent).includes(query) ? "" : "none";
+        }
+        if (searchContent.checked) {
+            for (const li of songListElement.children) {
+                const content = await getCachedSong(li.dataset.file)
+                if (content.includes(query) && li.style.display == "none") {
+                    li.style.display = "";
+                }
+            }
+        }
+    }
+    
+    async function getCachedSong(songFile) {
+        let content = cachedSongs[songFile];
+        if (content === undefined) {
+            content = await GET(`/songs/${encodeURIComponent(songFile)}`);
+            cachedSongs[songFile] = normalizeText(content);
+        }
+        return content;
     }
 
     function normalizeText(text) {
         return text
-            .toLowerCase()
             .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, ""); // Remove diacritics
+            .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+            .toLowerCase()
     }
 
     async function addToList(songFile) {
