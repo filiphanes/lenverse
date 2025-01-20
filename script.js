@@ -203,3 +203,10 @@ function parseSong(data) {
 	return data.split(/\n\s*\n/) // Split by empty lines and replace [name] with span.verse
 		.map(verse => verse.replace(/^\[([^\]]+)\]\s+/, '<span class="verse">$1</span>'))
 }
+
+function normalizeText(text) {
+	return text
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+		.toLowerCase()
+}

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Biblie</title>
+	<style></style>
+	<link rel="stylesheet" href="style.css" />
+	<script src="script.js"></script>
+	<style>
+		input,
+		button,
+		select {
+			font-family: inherit;
+			font-size: inherit;
+			padding: 0.4em;
+			margin: 0 0 0.25em 0;
+			box-sizing: border-box;
+			border: none;
+			background: #555;
+			color: whitesmoke;
+			border-radius: .5rem;
+		}
+		
+		input:disabled {
+			color: #ccc;
+		}
+		
+		button {
+			color: whitesmoke;
+			background-color: #555;
+			font-size: 1rem;
+			outline: none;
+			margin: 0;
+			line-height: 2rem;
+			width: 3rem;
+			border: 1px solid black;
+			border-radius: .5rem;
+			user-select: none
+		}
+		
+		button:active {
+			background-color: #ddd;
+			color: black;
+		}
+		
+		button:focus {
+			border-color: #666;
+		}
+		
+		.control-button {
+			width: 6rem;
+			/* float: right; */
+		}
+		
+		.books-filter,
+		.address-filter {
+			display: block;
+			width: 49%;
+			margin: 0 1% 1rem 0;
+			padding: 0;
+			height: 10rem;
+			overflow: scroll;
+			float: left;
+			max-width: 15rem;
+		}
+		
+		.book-item,
+		.address-set,
+		.address-remove {
+			width: 100%;
+			margin: 0 0 .1rem;
+			padding: .3rem;
+			text-align: left;
+			color: whitesmoke;
+			border-radius: 0;
+			background: black;
+		}
+		
+		.address-item {
+			width: 100%;
+			padding: 0;
+			margin: 0;
+			max-width: 30rem;
+			display: flex;
+		}
+		
+		.address-set {
+			width: auto;
+			padding: .5rem;
+			margin: 0;
+			text-align: left;
+			flex-grow: 2;
+		}
+		
+		.address-remove {
+			margin: 0;
+			max-width: 2rem;
+			padding: .25rem .5rem;
+			line-height: 1rem;
+		}
+		
+		.preview {
+			padding: .5rem;
+			user-select: text;
+		}
+		.preview.next {
+			color: #777;
+		}
+		
+		.btn-success {
+			background-color: green;
+		}
+		
+		.btn-danger {
+			background-color: red;
+		}
+		
+		.settings {
+			padding: .5rem;
+		}
+		
+		/* NumPads */
+		button {
+			color: whitesmoke;
+			background-color: transparent;
+			font-size: 1rem;
+			outline: none;
+			margin: 0;
+			line-height: 2rem;
+			width: 3rem;
+			border: none;
+		}
+
+		button:active {
+			background-color: #ccc;
+		}
+
+		button:hover,
+		button:focus {
+			background-color: #333;
+		}
+
+		.numberpad {
+			display: grid;
+			grid-template-columns: repeat(3, 3rem);
+			grid-template-rows: repeat(4, 3rem);
+			grid-gap: 0;
+			margin: 0 0 0.5rem 0;
+		}
+	
+		</style>
+</head>
+
+<body>
+	<div class="keyboard-container">
+		<div id="chapter">0</div>
+		<div id="verse">0</div>
+		<div class="numbepad">
+			<button onclick="chapterPad.append(1)">1</button>
+			<button onclick="chapterPad.append(2)">2</button>
+			<button onclick="chapterPad.append(3)">3</button>
+			<button onclick="chapterPad.append(4)">4</button>
+			<button onclick="chapterPad.append(5)">5</button>
+			<button onclick="chapterPad.append(6)">6</button>
+			<button onclick="chapterPad.append(7)">7</button>
+			<button onclick="chapterPad.append(8)">8</button>
+			<button onclick="chapterPad.append(9)">9</button>
+			<button onclick="chapterPad.back()">&#x2190;</button>
+			<button onclick="chapterPad.append(0)">0</button>
+			<button onclick="chapterPad.clear()">C</button>
+			<button onclick="chapterPad.add(-1)">-1</button>
+			<button onclick="chapterPad.add(1)">+1</button>
+		</div>
+		<div class="numbepad">
+			<button onclick="chapterPad.append(1)">1</button>
+			<button onclick="chapterPad.append(2)">2</button>
+			<button onclick="chapterPad.append(3)">3</button>
+			<button onclick="chapterPad.append(4)">4</button>
+			<button onclick="chapterPad.append(5)">5</button>
+			<button onclick="chapterPad.append(6)">6</button>
+			<button onclick="chapterPad.append(7)">7</button>
+			<button onclick="chapterPad.append(8)">8</button>
+			<button onclick="chapterPad.append(9)">9</button>
+			<button onclick="chapterPad.back()">&#x2190;</button>
+			<button onclick="chapterPad.append(0)">0</button>
+			<button onclick="chapterPad.clear()">C</button>
+			<button onclick="chapterPad.add(-1)">-1</button>
+			<button onclick="chapterPad.add(1)">+1</button>
+		</div>
+	</div>
+</body>
+<div class="books-filter">
+	<input type="text" id="searchInput" placeholder="Hľadať..." oninput="filterBooks()" />
+	<ul id="bookList"></ul>
+</div>
+
+<div id="bible1preview" class="preview">
+  {s.line1}<br/>
+  {@html s.line2}
+</div>
+<div id="bible1previewNext" class="preview next"></div>
+
+<div id="bible2preview" class="preview">
+  {s.line3}<br/>
+  {@html s.line4}
+</div>
+<div id="bible2previewNext" class="preview next"></div>
+
+<div class="settings">
+  <div class="bible">Preklad:
+    <select id="bible1" onchange="onchangeBible1">
+    {#each Object.entries(bibles) as [id, bible]}
+      <option value={id}>{bible.name}</option>
+    {/each}
+    </select>
+  </div>
+
+  <div class="bible">Preklad 2:
+    <select id="bible2" onchange={onchangeBible2}>
+      <option value="">Žiadny</option>
+    </select>
+  </div>
+
+  <div class="bible">
+    <label>
+      <input type="checkbox" onchange="onchangeVerserNumbers()" /> Čísla veršov
+    </label>
+  </div>
+  <div class="bible">
+    <label>
+      <input type="checkbox" onchange="onchangeShowNextVerses" /> Nasledujúce verše
+    </label>
+  </div>
+  <div class="bible">
+    <label>
+      <input type="checkbox" onchange="onchangeHideOnSelector" /> Skryť pri výbere knihy
+    </label>
+  </div>
+  <div class="bible">
+    <label>
+      <input type="checkbox" onchange="onchangeSplitButton" /> Texty do programu až po kliknutí
+    </label>
+  </div>
+</div>
+
+<script>
+	const bookListElement = document.getElementById("bookList");
+	const searchInput = document.getElementById("searchInput");
+	const searchContent = document.getElementById("searchContent");
+	const cachedBooks = {};
+	const bibles = {};
+
+	let address = {
+		bible: 'roh',
+		bible2: '',
+		book: 'gn',
+		chapter: 1,
+		verse: 1,
+		vcount: 1,
+	}
+
+	function append(num) { this.value = +this.value + num; }
+	function clear() { this.value = 0; }
+	function back() { this.value = Math.floor(+this.value / 10) || 0 }
+	function add(val) { this.value += val; }
+	const chapterPad = {
+		value: 1,
+		min: 1,
+		max: 50,
+		append, clear, back, add,
+		update: function() {
+			console.log('chapter: ', this.value)
+		}
+	}
+	const versePad = {
+		value: 1,
+		min: 1,
+		max: 50,
+		append, clear, back, add,
+		update: function() {
+			console.log('verse: ', this.value)
+		}
+	}
+
+	const updateCurrentAddress = connectToFileWebSocket("/current/bibleaddress.json", data => {
+		try {
+			const address = JSON.parse(data);
+			updateAddress(address);
+		} catch (err) {
+			console.error(err)
+		}
+	})
+
+	async function fetchBibles() {
+		const data = await GET("/bibles/");
+		const bibleDirs = data.trim().split("\n");
+		for (const dir of bibleDirs) {
+			if (dir.endsWith('/')) {
+				const abbr = dir.slice(0, dir.length-1);
+				let data = await GET(`/bibles/${abbr}/_index.json`);
+				bibles[abbr] = JSON.parse(data);
+			}
+		}
+		console.log('Bibles', bibles)
+		updateAddress(address);
+		renderBibleList(bibles, document.getElementById('bible1'), verse.bible);
+		if (verse.bible2) renderBibleList(bibles, document.getElementById('bible2'), verse.bible2);
+	}
+
+	function renderBibleList(bibles, listElement, selected) {
+		bookListElement.innerHTML = "";
+		for (const [abbr, bible] of Object.entries(bibles)) {
+			const option = document.createElement("option");
+			option.value = abbr;
+			if (abbr == selected) option.selected = true;
+			option.textContent = bible.name;
+			listElement.appendChild(option);
+		}
+		if (listElement.id == 'bible2') {
+			listElement.appendChild(document.createElement(option))
+		}
+	}
+
+	async function updateAddress(adr) {
+		console.log('Update adr', adr)
+		if (bibles[adr.bible] === undefined) {
+			console.log('undefined bible[', adr.bible, ']')
+			return;
+		}
+		renderBookList(bibles[adr.bible].bookslist, bookListElement);
+	}
+
+	function renderBookList(books, listElement) {
+		listElement.innerHTML = "";
+		books.forEach(book => {
+				const li = document.createElement("li");
+				li.dataset.abbr = book.abbreviation;
+				li.dataset.search = normalizeText(book.name);
+				if (book.aliases) li.dataset.search += normalizeText(book.aliases.join(' '));
+				li.textContent = book.name;
+				listElement.appendChild(li);
+		});
+		filterBooks(listElement);
+	}
+
+	async function filterBooks(listElement) {
+		const query = normalizeText(searchInput.value);
+		for (const li of listElement.children) {
+				li.style.display = li.dataset.search.includes(query) ? "" : "none";
+		}
+	}
+	
+	async function getCachedBook(bible, book) {
+		let content = bibles[bible][bookFile];
+		if (content === undefined) {
+				content = await GET(`/bibles/${bible}/${book}.json`);
+				bibles[bible][book] = JSON.parse(content);
+		}
+		return content;
+	}
+
+	async function addToList(adr) {
+		let currentListData = await GET("/current/biblelist.txt");
+		console.log("Adding adr list:", adr);
+		await PUT("/current/biblelist.txt", currentListData.trim()+'\n'+JSON.stringify(adr));
+	}
+
+	fetchBibles();
+</script>
+</html>

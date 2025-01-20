@@ -2,5 +2,6 @@ bin/
 current/
 lists/
 songs/
+bibles/
 node_modules/
-.DS_Store
+**/.DS_Store

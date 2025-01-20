@@ -15,13 +15,30 @@
     const cachedSongs = {};
     const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
 
+    async function fetchDirRecursive(dir, prefix) {
+        if (prefix === undefined) prefix = '';
+        const data = await GET(dir+prefix);
+        const names = data.trim().split("\n");
+        for (let i=0; i<names.length; i++) {
+            if (names[i].endsWith('/')) {
+                const subnames = await fetchDirRecursive(dir, prefix+names[i]);
+                names.splice(i, 1, ...subnames);
+                i += subnames.length - 1;
+            } else {
+                names[i] = prefix+names[i];
+            }
+        }
+        return names;
+    }
+
     async function fetchSongs() {
-        const data = await GET("/songs/");
-        const songFiles = data.trim().split("\n").sort(collator.compare);
+        let songFiles = await fetchDirRecursive('/songs/');
+        songFiles.sort(collator.compare);
         renderSongList(songFiles);
     }
 
     function renderSongList(songFiles) {
+        console.log(songFiles)
         songListElement.innerHTML = "";
         songFiles.forEach(songFile => {
             const li = document.createElement("li");
@@ -68,13 +85,6 @@
         return content;
     }
 
-    function normalizeText(text) {
-        return text
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-            .toLowerCase()
-    }
-
     async function addToList(songFile) {
         let currentListData = await GET("/current/list.txt");
         console.log("Adding song to list:", songFile);
@@ -82,6 +92,5 @@
     }
 
     fetchSongs();
-    setInterval(fetchSongs, 30000);
 </script>
 </body>

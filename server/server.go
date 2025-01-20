@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"mime"
 	"net/http"
@@ -25,35 +24,23 @@ var (
 	}
 )
 
-// List files recursively and return plain text
-func listFilesRecursive(directory string) ([]string, error) {
-	var files []string
-	err := filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() && !strings.HasPrefix(path, ".") {
-			relPath, _ := filepath.Rel(directory, path)
-			files = append(files, relPath)
-		}
-		return nil
-	})
-	return files, err
-}
-
 // Serve file lists as plain text
 func handleFileList(w http.ResponseWriter, r *http.Request) {
 	dir := filepath.Join(baseDir, r.URL.Path)
 
-	files, err := listFilesRecursive(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
-	for _, file := range files {
-		fmt.Fprintln(w, file)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			fmt.Fprintln(w, entry.Name()+"/")
+		} else {
+			fmt.Fprintln(w, entry.Name())
+		}
 	}
 }
 
@@ -185,7 +172,8 @@ func main() {
 		listen = "127.0.0.1:5005"
 	}
 
-	log.Printf("Server running on http://%s/\n", listen)
+	log.Printf("Listening on http://%s/\n", listen)
+	log.Printf("Serving dir '%s'\n", baseDir)
 	if err := http.ListenAndServe(listen, nil); err != nil {
 		println("Error starting server:", err)
 	}
