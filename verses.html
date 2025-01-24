@@ -18,18 +18,29 @@
 	<script>
 		const versesListElement = document.getElementById("versesList");
 		const hideButton = document.getElementById("hide");
+		let currentList = [];
+		let songIndex = 0;
 		let verses = [];
 		let verseIndex = 0;
 		let hidden = false;
 
-		connectToFileWebSocket("/current/song.txt", data => {
-			verses = parseSong(data);
+		connectToFileWebSocket("/current/list.txt", async data => {
+			currentList = data.split('\n');
+			verses = await parseSong(currentList[songIndex]) || [];
+			verses = currentList[songIndex];
+		});
+
+		connectToFileWebSocket("/current/songindex.txt", async data => {
+			if (songIndex == +data) return;
+			songIndex = +data;
+			verses = await parseSong(currentList[songIndex]) || [];
 			renderVerses();
+			selectVerse(verseIndex, true);
 		});
 
 		const updateVerseIndex = connectToFileWebSocket("/current/verseindex.txt", data => {
-			const index = parseInt(data);
-			selectVerse(index, true);
+			const verseIndex = parseInt(data);
+			selectVerse(verseIndex, true);
 		});
 
 		function renderVerses() {
@@ -41,10 +52,15 @@
 				listItem.onclick = () => selectVerse(i);
 				versesListElement.appendChild(listItem);
 			});
+			updateTimers();
 		}
 
 		async function selectVerse(index, dontUpdate) {
-			if (index < 0 || index >= verses.length || verseIndex == index) return;
+			if (index < 0 ||
+				index >= verses.length ||
+				verseIndex == index ||
+				!versesListElement.children[index]
+			) return;
 			verseIndex = index;
 			// Clear and set current verse class
 			for (const li of versesListElement.children) li.classList.remove("current");
@@ -56,19 +72,19 @@
 			// Make plain text version
 			let txt = "";
 			for (const node of versesListElement.children[index].childNodes) {
-				if (node.nodeName === "#text") {
+				if (node.nodeName === "#text" || node.nodeName == "p") {
 					txt += node.textContent;
 				}
 			}
 			PUT("/current/verse.txt", txt);
-			// PUT("/current/verse.html", verses[verseIndex]);
+			PUT("/current/verse.html", verses[verseIndex]);
 		}
 		
 		async function toggleHidden() {
 			hidden = !hidden;
 			hideButton.classList.toggle("danger", hidden);
 			if (hidden) {
-				// PUT("/current/verse.html", "");
+				PUT("/current/verse.html", "");
 				PUT("/current/verse.txt", "");
 			} else {
 				selectVerse(verseIndex);
@@ -88,5 +104,7 @@
 		}
 
 		document.addEventListener("keydown", handleKeyDown);
+		
+		setInterval(updateTimers, 1000);
 	</script>
 </body>

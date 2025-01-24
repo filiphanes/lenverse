@@ -38,7 +38,6 @@
     }
 
     function renderSongList(songFiles) {
-        console.log(songFiles)
         songListElement.innerHTML = "";
         songFiles.forEach(songFile => {
             const li = document.createElement("li");
@@ -52,10 +51,11 @@
                 div.appendChild(dirspan);
             }
             const span = document.createElement("span");
-            span.textContent = songFile.replace(/^.+\/|\.[^/.]+$/, ""); // remove extension
+            span.textContent = songFile.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
             div.appendChild(span);
             li.appendChild(div);
             appendButton(li, "+", () => addToList(songFile));
+            appendButton(li, "✎", () => edit(songFile));
             songListElement.appendChild(li);
         });
         filterSongs();
@@ -89,6 +89,10 @@
         let currentListData = await GET("/current/list.txt");
         console.log("Adding song to list:", songFile);
         await PUT("/current/list.txt", currentListData.trim()+'\n'+songFile);
+    }
+    
+    function edit(songFile) {
+        window.open('/editor.html#'+songFile, '_blank');
     }
 
     fetchSongs();

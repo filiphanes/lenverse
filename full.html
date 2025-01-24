@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-	<title>Main</title>
+	<title>Full</title>
 	<style>
 		body {
 			margin: 0;
@@ -11,32 +11,33 @@
 			background-color: #000;
 			color: #fff;
 			font-family: Arial, sans-serif;
+			font-size: 5vw;
 		}
 
 		#currentVerse {
-			font-size: 5vw;
 			text-align: center;
 			white-space: pre;
 		}
-
-		h1,
-		h2,
-		blockquote,
-		sup {
-			display: none;
+		h1, h2 {
+			font-size: inherit;
+			margin: 0;
+		}
+		p {
+			margin: 0;
+			border: 1px solid #ccc;
+			padding: 1rem;
 		}
 	</style>
 	<script src="script.js"></script>
 </head>
 
 <body>
-	<section>
-		<div id="currentVerse"></div>
-	</section>
+	<section id="currentVerse"></section>
 	<script>
 		const currentVerseElement = document.getElementById("currentVerse");
-		connectToFileWebSocket("/current/verse.txt", data => {
+		connectToFileWebSocket("/current/verse.html", data => {
 			currentVerseElement.innerHTML = data;
+			updateTimers();
 		});
 		setInterval(updateTimers, 1000);
 	</script>

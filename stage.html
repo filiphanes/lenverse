@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <head>
 	<title>Stage</title>
 	<script src="script.js"></script>
@@ -36,8 +35,10 @@
 			text-align: center;
 		}
 
-		.verse,
-		.chord {
+		h1,
+		h2,
+		blockquote,
+		sup {
 			display: none;
 		}
 	</style>
@@ -47,6 +48,8 @@
 	<ol id="verseList"></ol>
 	<script>
 		const verseUL = document.getElementById("verseList");
+		let currentList = [];
+		let songIndex = 0;
 		let verses = [];
 		let index = 0;
 
@@ -59,16 +62,25 @@
 			});
 		}
 
-		connectToFileWebSocket("/current/verseindex.txt", data => {
-			index = parseInt(data);
-			scrollToIndex(index);
+		connectToFileWebSocket("/current/list.txt", async data => {
+			const oldfile = currentList[songIndex];
+			currentList = data.split('\n')
+			if (oldfile != currentList[songIndex])
+				verses = await parseSong(currentList[songIndex]) || [];
 		});
 
-		connectToFileWebSocket("/current/song.txt", data => {
-			verses = parseSong(data)
+		connectToFileWebSocket("/current/songindex.txt", async data => {
+			if (songIndex == +data) return;
+			songIndex = +data;
+			verses = await parseSong(currentList[songIndex]) || [];
 			verses.push('□')
 			renderVerses()
 			scrollToIndex(index)
+		});
+
+		connectToFileWebSocket("/current/verseindex.txt", data => {
+			index = parseInt(data);
+			scrollToIndex(index);
 		});
 
 		function renderVerses() {
@@ -79,5 +91,7 @@
 				verseUL.appendChild(listItem);
 			}
 		}
+
+		setInterval(updateTimers, 1000);
 	</script>
 </body>

@@ -75,7 +75,7 @@
 					div.appendChild(dirspan);
 				}
 				const span = document.createElement("span");
-				span.textContent = songFile.replace(/^.+\/|\.[^/.]+$/, ""); // remove extension
+				span.textContent = songFile.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
 				div.appendChild(span);
 				listItem.appendChild(div);
 				/* 
@@ -110,7 +110,6 @@
 			if (index < 0 || index >= currentList.length) return;
 			const songFile = currentList[index];
 			const currentSongData = await GET(`/songs/${songFile}`);
-			await PUT("/current/song.txt", currentSongData);
 			updateSongIndex(`${index}`);
 		}
 

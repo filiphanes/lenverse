@@ -56,6 +56,28 @@ li {
 	white-space: pre;
 	cursor: pointer;
 }
+#versesList > li {
+	flex-direction: column;
+}
+
+li h1,
+li h2 {
+	margin: 0;
+	font-size: inherit;
+	align-self: end;
+}
+li p {
+	border-top: 1px solid #ccc;
+	display: block;
+	width: 100%;
+	margin: .5rem 0 0;
+	padding: .5rem 0 0;
+}
+li p:first-of-type {
+	border-top: none;
+	margin: 0;
+	padding: 0;
+}
 
 li.dragging {
 	opacity: 0.5;
@@ -79,6 +101,7 @@ div {
 li span.dir {
 	display: block;
 	font-size: 0.8rem;
+	opacity: .6;
 }
 
 li span.verse {
@@ -168,4 +191,13 @@ select:focus {
 
 body.connected #disconnected {
 	display: none;
+}
+
+.toolbar {
+	position: fixed;
+}
+.toolbar button {
+	width: 3rem;
+	height: 2rem;
+	font-size: inherit;
 }

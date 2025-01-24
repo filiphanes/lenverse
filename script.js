@@ -123,14 +123,18 @@ function parseOpenSongLyrics(s) {
 	for (const [key, lines] of Object.entries(verses)) {
 		verses[key] = lines.join('\n');
 	}
-	return verses;
+	if (verseOrder.length) {
+		return verseOrder.map(name => (`<h1>${name}</h1><p>${verses[name] || ""}</p>`))
+	}
 }
 
 function parseOpenSongXml(xml) {
 	const verseOrder = xml.getElementsByTagName("presentation")[0].textContent.trim().toUpperCase().split(/\s+/);
 	const raw = xml.getElementsByTagName("lyrics")[0].textContent.trim();
 	const verses = parseOpenSongLyrics(raw);
-	return { verses, verseOrder };
+	if (verseOrder.length) {
+		return verseOrder.map(name => (`<h1>${name}</h1><p>${verses[name] || ""}</p>`))
+	}
 }
 
 function parseOpenLyricsXml(xml) {
@@ -146,7 +150,9 @@ function parseOpenLyricsXml(xml) {
 			verseOrder.push(name);
 		}
 	}
-	return { verses, verseOrder };
+	if (verseOrder.length) {
+		return verseOrder.map(name => (`<h1>${name}</h1><p>${verses[name] || ""}</p>`))
+	}
 }
 
 function parseMarkdown(md) {
@@ -165,43 +171,76 @@ function parseMarkdown(md) {
 			else name = "";
 			continue;
 		} else if (line.startsWith('>')) { // Comment as markdown quote
-			line = `<span class="comment">${line.slice(1).trim()}</span>`;
+			line = `<blockquote>${line.slice(1).trim()}<blockquote>`;
 		} else { // Chords
-			line = line.replace(/\[([^\]]+)\]/g, '<span class="chord">$1</span>');
+			line = line.replace(/\[([^\]]+)\]/g, '<sup>$1<sup>');
 		}
 		if (line.trim()) {
 			lines.push(line);
 		}
 	}
-	return { verses, verseOrder };
+	if (lines.length) verses[name] = lines.join('\n');
+	if (name.length)  verseOrder.push(name);
+	if (verseOrder.length) {
+		return verseOrder.map(name => (`<h1>${name}</h1><p>${verses[name] || ""}</p>`))
+	}
 }
 
-function parseSong(data) {
-	if (data.startsWith("<?xml ")) {
+function parseProJson(data) {
+	const verses = [];
+	for (let group of data.presentation.groups) {
+		for (let slide of group.slides) {
+			if (slide.enabled === false) continue;
+			const fields = slide.text.split('\r');
+			let verse = slide.label ? `<h1>${slide.label}</h1>\n` : "";
+			if (slide.notes) verse += `<blockquote>${slide.notes}</blockquote>\n`
+			if (slide.name) verse += `<h2>${slide.name}</h2>\n`
+			for (let i=1; i <= fields.length; i++) {
+				verse += `<p>${fields[i-1]}</p>\n`
+			}
+			verses.push(verse);
+		}
+	}
+	return verses;
+}
+
+function parseText(data) {
+	// Split by empty lines and replace [name] with h1
+	return data
+		.split(/\n\s*\n/)
+		.map(verse => verse.replace(/^\[([^\]]+)\]\s+/, '<h1>$1</h1>'))
+}
+
+async function parseSong(filename, raw) {
+	if (!filename) return [];
+	if (!raw) raw = await GET('/songs/'+filename);
+	if (raw.startsWith("<?xml ")) {
 		const parser = new DOMParser();
-		const xml = parser.parseFromString(data, "application/xml");
-		let parsed = {};
+		const xml = parser.parseFromString(raw, "application/xml");
+		let verses = [];
 		try {
-			parsed = parseOpenLyricsXml(xml);
+			verses = parseOpenLyricsXml(xml);
 			console.log('Parsed as OpenLyrics XML');
 		} catch (error) {
 			console.error(error);
 		}
-		if (!parsed.verses.length) {
-			parsed = parseOpenSongXml(xml);
+		if (!verses.verses.length) {
+			verses = parseOpenSongXml(xml);
 			console.log('Parsed as OpenSong XML');
 		}
-	} else {
-		parsed = parseMarkdown(data);
+	} else if (filename.endsWith('.md')) {
+		verses = parseMarkdown(raw);
 		console.log('Parsed as Markdown');
+	} else if (filename.endsWith('.json')) {
+		const o = JSON.parse(raw);
+		verses = parseProJson(o);
+		console.log('Parsed as ProJson');
+	} else {
+		verses = parseText(raw);
+		console.log('Parsed as Text');
 	}
-	console.log("Parsed song", parsed);
-	if (parsed.verseOrder.length) {
-		console.log('Parsing as empty-line delimited blocks');
-		return parsed.verseOrder.map(key => (`${parsed.verses[key] || ""}<span class="verse">${key}</span>`))
-	}
-	return data.split(/\n\s*\n/) // Split by empty lines and replace [name] with span.verse
-		.map(verse => verse.replace(/^\[([^\]]+)\]\s+/, '<span class="verse">$1</span>'))
+	console.log("Parsed verses", verses);
+	return verses;
 }
 
 function normalizeText(text) {
@@ -209,4 +248,151 @@ function normalizeText(text) {
 		.normalize("NFD")
 		.replace(/[\u0300-\u036f]/g, "") // Remove diacritics
 		.toLowerCase()
+}
+
+// Timers
+function formatDate(date, format, utc) {
+	var MMMM = ["\x00", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+	var MMM = ["\x01", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+	var dddd = ["\x02", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+	var ddd = ["\x03", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+	function ii(i, len) {
+		var s = i + "";
+		len = len || 2;
+		while (s.length < len) s = "0" + s;
+		return s;
+	}
+
+	var y = utc ? date.getUTCFullYear() : date.getFullYear();
+	format = format.replace(/(^|[^\\])yyyy+/g, "$1" + y);
+	format = format.replace(/(^|[^\\])yy/g, "$1" + y.toString().substr(2, 2));
+	format = format.replace(/(^|[^\\])y/g, "$1" + y);
+
+	var M = (utc ? date.getUTCMonth() : date.getMonth()) + 1;
+	format = format.replace(/(^|[^\\])MMMM+/g, "$1" + MMMM[0]);
+	format = format.replace(/(^|[^\\])MMM/g, "$1" + MMM[0]);
+	format = format.replace(/(^|[^\\])MM/g, "$1" + ii(M));
+	format = format.replace(/(^|[^\\])M/g, "$1" + M);
+
+	var d = utc ? date.getUTCDate() : date.getDate();
+	format = format.replace(/(^|[^\\])dddd+/g, "$1" + dddd[0]);
+	format = format.replace(/(^|[^\\])ddd/g, "$1" + ddd[0]);
+	format = format.replace(/(^|[^\\])dd/g, "$1" + ii(d));
+	format = format.replace(/(^|[^\\])d/g, "$1" + d);
+
+	var H = utc ? date.getUTCHours() : date.getHours();
+	format = format.replace(/(^|[^\\])HH+/g, "$1" + ii(H));
+	format = format.replace(/(^|[^\\])H/g, "$1" + H);
+
+	var h = H > 12 ? H - 12 : H == 0 ? 12 : H;
+	format = format.replace(/(^|[^\\])hh+/g, "$1" + ii(h));
+	format = format.replace(/(^|[^\\])h/g, "$1" + h);
+
+	var m = utc ? date.getUTCMinutes() : date.getMinutes();
+	format = format.replace(/(^|[^\\])mm+/g, "$1" + ii(m));
+	format = format.replace(/(^|[^\\])m/g, "$1" + m);
+
+	var s = utc ? date.getUTCSeconds() : date.getSeconds();
+	format = format.replace(/(^|[^\\])ss+/g, "$1" + ii(s));
+	format = format.replace(/(^|[^\\])s/g, "$1" + s);
+
+	var f = utc ? date.getUTCMilliseconds() : date.getMilliseconds();
+	format = format.replace(/(^|[^\\])fff+/g, "$1" + ii(f, 3));
+	f = Math.round(f / 10);
+	format = format.replace(/(^|[^\\])ff/g, "$1" + ii(f));
+	f = Math.round(f / 10);
+	format = format.replace(/(^|[^\\])f/g, "$1" + f);
+
+	var T = H < 12 ? "AM" : "PM";
+	format = format.replace(/(^|[^\\])TT+/g, "$1" + T);
+	format = format.replace(/(^|[^\\])T/g, "$1" + T.charAt(0));
+
+	var t = T.toLowerCase();
+	format = format.replace(/(^|[^\\])tt+/g, "$1" + t);
+	format = format.replace(/(^|[^\\])t/g, "$1" + t.charAt(0));
+
+	var tz = -date.getTimezoneOffset();
+	var K = utc || !tz ? "Z" : tz > 0 ? "+" : "-";
+	if (!utc) {
+		tz = Math.abs(tz);
+		var tzHrs = Math.floor(tz / 60);
+		var tzMin = tz % 60;
+		K += ii(tzHrs) + ":" + ii(tzMin);
+	}
+	format = format.replace(/(^|[^\\])K/g, "$1" + K);
+
+	var day = (utc ? date.getUTCDay() : date.getDay()) + 1;
+	format = format.replace(new RegExp(dddd[0], "g"), dddd[day]);
+	format = format.replace(new RegExp(ddd[0], "g"), ddd[day]);
+
+	format = format.replace(new RegExp(MMMM[0], "g"), MMMM[M]);
+	format = format.replace(new RegExp(MMM[0], "g"), MMM[M]);
+
+	format = format.replace(/\\(.)/g, "$1");
+
+	return format;
+};
+
+const timeElements = document.getElementsByTagName('time');
+const epoch = new Date(0);
+
+function patchDate(date, s) {
+	let iso = date.toISOString();
+	return new Date(iso.substr(0, 19-s.length) + s);
+}
+
+function updateTimers() {
+	const now = new Date();
+	for (let i=timeElements.length-1; i >= 0; i--) {
+		const element = timeElements[i];
+		const format = element.getAttribute('format');
+		if (!format) continue;
+		let since = element.getAttribute('since');
+		let until = element.getAttribute('until');
+		if (until) {
+			if (until.startsWith('now+')) {
+				until = new Date(now - epoch + +patchDate(epoch, until.slice(4))).toISOString().slice(0, 19);
+				element.setAttribute('until', until)
+			}
+			datetime = new Date(patchDate(epoch, until) - epoch - now);
+		} else if (since) {
+			if (since == 'now') {
+				since = now.toISOString().slice(0, 19);
+				element.setAttribute('since', since);
+			}
+			datetime = new Date(now - epoch - patchDate(epoch, since));
+		}
+		else datetime = now;
+		element.textContent = formatDate(datetime, format);
+	}
+}
+
+/* Text editor */
+function formatText(tag) {
+	const selection = window.getSelection();
+	if (!selection.rangeCount) return;
+
+	const range = selection.getRangeAt(0);
+	const parentElement = range.commonAncestorContainer.parentElement;
+
+	if (parentElement.tagName === tag) {
+		// If already wrapped, unwrap by replacing the tag's content with its children
+		const unwrapped = document.createDocumentFragment();
+		while (parentElement.firstChild) {
+			unwrapped.appendChild(parentElement.firstChild);
+		}
+		parentElement.replaceWith(unwrapped);
+	} else {
+		// Otherwise, apply the formatting by wrapping the selection
+		const wrapper = document.createElement(tag);
+		wrapper.appendChild(range.extractContents());
+		range.insertNode(wrapper);
+
+		// Reselect the formatted text
+		selection.removeAllRanges();
+		const newRange = document.createRange();
+		newRange.selectNodeContents(wrapper);
+		selection.addRange(newRange);
+	}
 }
