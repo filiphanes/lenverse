@@ -251,120 +251,131 @@ function normalizeText(text) {
 }
 
 // Timers
+function pad(num, len) {
+	return String(num).padStart(len||2, "0");
+}
+
+let MMMM = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+let MMM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+let dddd = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+let ddd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function K(date, utc) {
+	if (utc) return "Z";
+	const offset = -date.getTimezoneOffset();
+	const sign = offset >= 0 ? "+" : "-";
+	const absOffset = Math.abs(offset);
+	return `${sign}${pad(Math.floor(absOffset / 60))}:${pad(absOffset % 60)}`;
+}
+
 function formatDate(date, format, utc) {
-	var MMMM = ["\x00", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-	var MMM = ["\x01", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-	var dddd = ["\x02", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-	var ddd = ["\x03", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+	const get = (method) => utc ? date[`getUTC${method}`]() : date[`get${method}`]();
+	const y = get("FullYear");
+	const M = get("Month");
+	const d = get("Date");
+	const H = get("Hours");
+	const m = get("Minutes");
+	const s = get("Seconds");
+	// const f = get("Milliseconds");
+	const day = get("Day");
 
-	function ii(i, len) {
-		var s = i + "";
-		len = len || 2;
-		while (s.length < len) s = "0" + s;
-		return s;
-	}
+	const replacements = {
+		yyyy: String(y),
+		yy: String(y).slice(-2),
+		M: M,
+		MM: pad(M),
+		MMM: MMM[M - 1],
+		MMMM: MMMM[M - 1],
+		d: d,
+		dd: pad(d),
+		ddd: ddd[day],
+		dddd: dddd[day],
+		H: String(H),
+		HH: pad(H),
+		h: String(H % 12 || 12),
+		hh: pad(H % 12 || 12),
+		m: String(m),
+		mm: pad(m),
+		s: String(s),
+		ss: pad(s),
+		// f: Math.floor(f / 100),
+		// ff: pad(Math.floor(f / 10), 2),
+		// fff: pad(f, 3),
+		TT: H < 12 ? "AM" : "PM",
+		tt: H < 12 ? "am" : "pm",
+	};
 
-	var y = utc ? date.getUTCFullYear() : date.getFullYear();
-	format = format.replace(/(^|[^\\])yyyy+/g, "$1" + y);
-	format = format.replace(/(^|[^\\])yy/g, "$1" + y.toString().substr(2, 2));
-	format = format.replace(/(^|[^\\])y/g, "$1" + y);
+	return format.replace(/(\\.)|([a-zA-Z])\2*/g, (match, escaped) => (escaped ? escaped.slice(1) : replacements[match] || (match == 'K' ? K(date, utc) : match)));
+}
 
-	var M = (utc ? date.getUTCMonth() : date.getMonth()) + 1;
-	format = format.replace(/(^|[^\\])MMMM+/g, "$1" + MMMM[0]);
-	format = format.replace(/(^|[^\\])MMM/g, "$1" + MMM[0]);
-	format = format.replace(/(^|[^\\])MM/g, "$1" + ii(M));
-	format = format.replace(/(^|[^\\])M/g, "$1" + M);
-
-	var d = utc ? date.getUTCDate() : date.getDate();
-	format = format.replace(/(^|[^\\])dddd+/g, "$1" + dddd[0]);
-	format = format.replace(/(^|[^\\])ddd/g, "$1" + ddd[0]);
-	format = format.replace(/(^|[^\\])dd/g, "$1" + ii(d));
-	format = format.replace(/(^|[^\\])d/g, "$1" + d);
-
-	var H = utc ? date.getUTCHours() : date.getHours();
-	format = format.replace(/(^|[^\\])HH+/g, "$1" + ii(H));
-	format = format.replace(/(^|[^\\])H/g, "$1" + H);
-
-	var h = H > 12 ? H - 12 : H == 0 ? 12 : H;
-	format = format.replace(/(^|[^\\])hh+/g, "$1" + ii(h));
-	format = format.replace(/(^|[^\\])h/g, "$1" + h);
-
-	var m = utc ? date.getUTCMinutes() : date.getMinutes();
-	format = format.replace(/(^|[^\\])mm+/g, "$1" + ii(m));
-	format = format.replace(/(^|[^\\])m/g, "$1" + m);
-
-	var s = utc ? date.getUTCSeconds() : date.getSeconds();
-	format = format.replace(/(^|[^\\])ss+/g, "$1" + ii(s));
-	format = format.replace(/(^|[^\\])s/g, "$1" + s);
-
-	var f = utc ? date.getUTCMilliseconds() : date.getMilliseconds();
-	format = format.replace(/(^|[^\\])fff+/g, "$1" + ii(f, 3));
-	f = Math.round(f / 10);
-	format = format.replace(/(^|[^\\])ff/g, "$1" + ii(f));
-	f = Math.round(f / 10);
-	format = format.replace(/(^|[^\\])f/g, "$1" + f);
-
-	var T = H < 12 ? "AM" : "PM";
-	format = format.replace(/(^|[^\\])TT+/g, "$1" + T);
-	format = format.replace(/(^|[^\\])T/g, "$1" + T.charAt(0));
-
-	var t = T.toLowerCase();
-	format = format.replace(/(^|[^\\])tt+/g, "$1" + t);
-	format = format.replace(/(^|[^\\])t/g, "$1" + t.charAt(0));
-
-	var tz = -date.getTimezoneOffset();
-	var K = utc || !tz ? "Z" : tz > 0 ? "+" : "-";
-	if (!utc) {
-		tz = Math.abs(tz);
-		var tzHrs = Math.floor(tz / 60);
-		var tzMin = tz % 60;
-		K += ii(tzHrs) + ":" + ii(tzMin);
-	}
-	format = format.replace(/(^|[^\\])K/g, "$1" + K);
-
-	var day = (utc ? date.getUTCDay() : date.getDay()) + 1;
-	format = format.replace(new RegExp(dddd[0], "g"), dddd[day]);
-	format = format.replace(new RegExp(ddd[0], "g"), ddd[day]);
-
-	format = format.replace(new RegExp(MMMM[0], "g"), MMMM[M]);
-	format = format.replace(new RegExp(MMM[0], "g"), MMM[M]);
-
-	format = format.replace(/\\(.)/g, "$1");
-
-	return format;
-};
+function addPeriodToDate(date, period) {
+	// Parse ISO 8601 period syntax
+	const match = period.match(/^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+\.?\d*)S)?)?$/);
+	if (!match) return date;
+	const [, years, months, weeks, days, hours, minutes, seconds] = match;
+	const target = new Date(date);
+	if (years)   target.setFullYear(target.getFullYear() + parseInt(years, 0,10));
+	if (months)  target.setMonth(target.getMonth() + parseInt(months, 0,10));
+	if (weeks)   target.setDate(target.getDate() + parseInt(weeks, 0,10) * 7);
+	if (days)    target.setDate(target.getDate() + parseInt(days, 0,10));
+	if (hours)   target.setHours(target.getHours() + parseInt(hours, 0,10));
+	if (minutes) target.setMinutes(target.getMinutes() + parseInt(minutes, 0,10));
+	if (seconds) target.setSeconds(target.getSeconds() + parseFloat(seconds));
+	return target;
+}
 
 const timeElements = document.getElementsByTagName('time');
-const epoch = new Date(0);
+const today = new Date();
+today.setHours(0);
+today.setMinutes(0);
+today.setSeconds(0);
 
 function patchDate(date, s) {
-	let iso = date.toISOString();
-	return new Date(iso.substr(0, 19-s.length) + s);
+	const iso = date.toISOString();
+	return new Date(iso.substr(0, 19-s.length) + s + iso.slice(19));
 }
+
+function doNothing() {}
 
 function updateTimers() {
 	const now = new Date();
-	for (let i=timeElements.length-1; i >= 0; i--) {
+	for (let i=0; i < timeElements.length; i++) {
 		const element = timeElements[i];
-		const format = element.getAttribute('format');
-		if (!format) continue;
-		let since = element.getAttribute('since');
-		let until = element.getAttribute('until');
-		if (until) {
-			if (until.startsWith('now+')) {
-				until = new Date(now - epoch + +patchDate(epoch, until.slice(4))).toISOString().slice(0, 19);
-				element.setAttribute('until', until)
+		if (!element.updateTextContent) {
+			const format = element.textContent;
+			if (!format) {
+				element.updateTextContent = doNothing();
+				continue;
 			}
-			datetime = new Date(patchDate(epoch, until) - epoch - now);
-		} else if (since) {
-			if (since == 'now') {
-				since = now.toISOString().slice(0, 19);
-				element.setAttribute('since', since);
+			const since = element.hasAttribute('since');
+			const until = element.hasAttribute('until');
+			const datetime = element.getAttribute('datetime');
+			let target;
+			if (!datetime) {
+				target = now;
+			} else if (datetime.startsWith('P')) {
+				target = addPeriodToDate(now, datetime);
+			} else {
+				target = patchDate(today, datetime);
 			}
-			datetime = new Date(now - epoch - patchDate(epoch, since));
+			
+			if (until) {
+				element.updateTextContent = function (now) {
+					const d = new Date(target - now);
+					this.textContent = formatDate(d, format);
+				}
+			} else if (since) {
+				element.updateTextContent = function (now) {
+					const d = new Date(now - target);
+					this.textContent = formatDate(d, format);
+				}
+			} else {
+				element.updateTextContent = function(now) {
+					this.textContent = formatDate(now, format);
+				}
+			}
 		}
-		else datetime = now;
-		element.textContent = formatDate(datetime, format);
+		element.updateTextContent(now);
 	}
 }
 

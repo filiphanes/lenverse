@@ -24,7 +24,7 @@
 </head>
 
 <body>
-	<div class="toolbar">
+	<section class="toolbar">
 		<button onclick="formatText('b')">b</button>
 		<button onclick="formatText('i')">i</button>
 		<button onclick="formatText('s')">s</button>
@@ -33,14 +33,13 @@
 		<button onclick="formatText('h2')">h2</button>
 		<button onclick="formatText('sup')">sup</button>
 		<button onclick="formatText('sub')">sub</button>
-	</div>
+	</section>
 	<ol id="versesList"></ol>
 	<div id="divRaw" contenteditable="true"></div>
 	<section id="controls">
 		<button id="save" title="Save" onclick="save()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M840-680v480q0 33-23 57t-57 23H200q-33 0-56-23t-24-57v-560q0-33 24-56t56-24h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z"/></svg></button>
 		<button id="raw" title="Raw" onclick="toggleRaw()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M320-240 80-480l240-240 57 57-184 184 183 183-56 56Zm320 0-57-57 184-184-183-183 56-56 240 240-240 240Z"/></svg></button>
 	</section>
-	<svg id="disconnected" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M792-56 400-448v174l62-62 58 56-160 160-160-160 58-56 62 62v-254L56-792l56-56 736 736-56 56ZM640-434l-80-80v-174l-64 64-56-56 160-160 160 160-56 56-64-64v254Z"/></svg>
 
 	<script>
 		const versesListElement = document.getElementById("versesList");

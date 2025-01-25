@@ -7,170 +7,189 @@
 </head>
 
 <body>
-	<select id="playlistSelect" onchange="updateCurrentPlaylist()"></select>
-	<ul id="songList"></ul>
-	<section id="controls">
-		<button title="Prev" onclick="selectSong(songIndex-1)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"> <path d="M860-240 500-480l360-240v480Zm-400 0L100-480l360-240v480Zm-80-240Zm400 0Zm-400 90v-180l-136 90 136 90Zm400 0v-180l-136 90 136 90Z" /></svg></button>
-		<button title="Save" onclick="saveList()"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"> <path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z" /></svg></button>
-		<button title="Next" onclick="selectSong(songIndex+1)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"> <path d="M100-240v-480l360 240-360 240Zm400 0v-480l360 240-360 240ZM180-480Zm400 0Zm-400 90 136-90-136-90v180Zm400 0 136-90-136-90v180Z" /></svg></button>
-	</section>
-	<svg id="disconnected" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M792-56 400-448v174l62-62 58 56-160 160-160-160 58-56 62 62v-254L56-792l56-56 736 736-56 56ZM640-434l-80-80v-174l-64 64-56-56 160-160 160 160-56 56-64-64v254Z"/></svg>
+<section class="toolbar">
+	<select id="lists" onchange="onchangeList()"></select>
+</section>
+<ul id="songList"></ul>
+<section id="controls">
+	<button title="Prev" onclick="setSongIndex(songIndex-1)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"> <path d="M860-240 500-480l360-240v480Zm-400 0L100-480l360-240v480Zm-80-240Zm400 0Zm-400 90v-180l-136 90 136 90Zm400 0v-180l-136 90 136 90Z" /></svg></button>
+	<button title="Save" onclick="saveList()"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"> <path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z" /></svg></button>
+	<button title="Next" onclick="setSongIndex(songIndex+1)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"> <path d="M100-240v-480l360 240-360 240Zm400 0v-480l360 240-360 240ZM180-480Zm400 0Zm-400 90 136-90-136-90v180Zm400 0 136-90-136-90v180Z" /></svg></button>
+</section>
+<svg id="disconnected" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M792-56 400-448v174l62-62 58 56-160 160-160-160 58-56 62 62v-254L56-792l56-56 736 736-56 56ZM640-434l-80-80v-174l-64 64-56-56 160-160 160 160-56 56-64-64v254Z"/></svg>
 
-	<script>
-		const listSelect = document.getElementById("playlistSelect");
-		const songListElement = document.getElementById("songList");
-		let currentList = [];
-		let songIndex = 0;
-		let index1 = null;
+<script>
+	const listsNode = document.getElementById("lists");
+	const songListElement = document.getElementById("songList");
+	let listFiles = [];
+	let currentList = [];
+	let currentListData = "";
+	let currentListFile = "";
+	let songIndex = 0;
+	let index1 = null;
 
-		async function fetchLists() {
-			const playlistsData = await GET("/lists/");
-			const listFiles = playlistsData.split("\n").sort();
-			renderListsSelect(listFiles);
-		}
+	async function fetchLists() {
+		const playlistsData = await GET("/lists/");
+		listFiles = playlistsData.trim().split("\n").sort();
+		renderListsSelect(listFiles);
+	}
 
-		const updateCurrentList = connectToFileWebSocket("/current/list.txt", data => {
-			currentList = data.split("\n").filter(a=>a);
+	const updateCurrentListFile = connectToFileWebSocket("/current/listfile.txt", async data => {
+		if (currentListFile == data) return;
+		currentListFile = data;
+		console.log('listfile', currentListFile)
+		renderListsSelect(listFiles); // update selected item
+		const fileData = await GET(`/lists/${currentListFile}`);
+		if (currentListData != fileData) {
+			currentListData = fileData;
+			currentList = fileData.trim().split("\n");
 			renderSongList(currentList);
-		})
+		}
+	})
 
-		const updateSongIndex = connectToFileWebSocket("/current/songindex.txt", data => {
-			const index = parseInt(data);
-			if (songIndex == index) return;  // avoid feedback loop
-			songIndex = index;
-			let i = 0;
-			for (const li of songListElement.children) {
-				li.classList.toggle("current", i++ === songIndex);
-			}
-			selectSong(songIndex);
+	const updateCurrentList = connectToFileWebSocket("/current/list.txt", async data => {
+		if (currentListData == data) return;
+		currentListData = data;
+		currentList = data.trim().split("\n");
+		renderSongList(currentList);
+		await PUT(`/lists/${currentListFile}`, currentListData);
+	})
+
+	const updateSongIndex = connectToFileWebSocket("/current/songindex.txt", data => {
+		const index = parseInt(data);
+		if (songIndex == index) return;  // avoid feedback loop
+		songIndex = index;
+		let i = 0;
+		for (const li of songListElement.children) {
+			li.classList.toggle("current", i++ === songIndex);
+		}
+		setSongIndex(songIndex);
+	});
+
+	function renderListsSelect(listFiles) {
+		console.log('rendering listFiles', listFiles)
+		listsNode.innerHTML = "";
+		listFiles.forEach(listFile => {
+			const option = document.createElement("option");
+			option.value = listFile;
+			option.textContent = listFile.replace(/\.[^/.]+$/, "") // Remove extension
+			option.selected = listFile == currentListFile;
+			listsNode.appendChild(option);
 		});
+	}
 
-		function renderListsSelect(listFiles) {
-			listSelect.innerHTML = "";
-			listFiles.forEach(listFile => {
-				const option = document.createElement("option");
-				option.value = listFile;
-				option.textContent = listFile.replace(/\.[^/.]+$/, "") // Remove extension
-				listSelect.appendChild(option);
-			});
-		}
-
-		function renderSongList(songFiles) {
-			songListElement.innerHTML = "";
-			songFiles.forEach((songFile, index) => {
-				const listItem = document.createElement("li");
-				listItem.draggable = true;
-				listItem.onclick = () => selectSong(index);
-				listItem.ondragstart = dragStart;
-				listItem.ondragover = dragOver;
-				listItem.ondragleave = dragLeave;
-				listItem.ondrop = drop;
-				if (index == songIndex) listItem.classList.add("current");
-				const div = document.createElement("div");
-				dir = songFile.replace(/(^|\/)[^\/]+$/, ""); // remove filename
-				if (dir) {
-					const dirspan = document.createElement("span");
-					dirspan.className = "dir";
-					dirspan.textContent = songFile.replace(/\/[^\/]+$/, ""); // remove filename
-					div.appendChild(dirspan);
-				}
-				const span = document.createElement("span");
-				span.textContent = songFile.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
-				div.appendChild(span);
-				listItem.appendChild(div);
-				/* 
-				appendButton(listItem, "↑", (event) => {
-					moveSong(index, index-1);
-					event.stopPropagation();
-				})
-				appendButton(listItem, "↓", (event) => {
-					moveSong(index, index+1);
-					event.stopPropagation();
-				})
-				*/
-				appendButton(listItem, "×", (event) => {
-					removeSongFromList(index);
-					event.stopPropagation();
-				})
-
-				songListElement.appendChild(listItem);
-			});
-		}
-
-		async function updateCurrentPlaylist() {
-			const listFile = listSelect.value;
-			if (!listFile) return
-			const data = await GET(`/lists/${listFile}`);
-			listWS.send(data);
-			currentList = data.split("\n");
-			fetchLists();
-		}
-
-		async function selectSong(index) {
-			if (index < 0 || index >= currentList.length) return;
-			const songFile = currentList[index];
-			const currentSongData = await GET(`/songs/${songFile}`);
-			updateSongIndex(`${index}`);
-		}
-
-		async function moveSong(index1, index2) {
-			if (index1 < 0 || index1 >= currentList.length ||
-			    index2 < 0 || index2 >= currentList.length ||
-			    index1 == index2)
-				return;
-			currentList.splice(index2, 0, currentList.splice(index1, 1));
-			updateCurrentList(currentList.join('\n'));
-			if (index1 == songIndex) updateSongIndex(index2);
-			else if (index2 == songIndex) updateSongIndex(index1);
-		}
-
-		async function saveList() {
-			const name = window.prompt("Type list filename!", listSelect.value).replace(/\.txt$/, "");
-			if (name.length) {
-				await PUT(`/lists/${name}.txt`, currentList.join("\n"));
-				console.log("List saved as", name+".txt",);
-				await fetchLists();
+	function renderSongList(songFiles) {
+		songListElement.innerHTML = "";
+		songFiles.forEach((songFile, index) => {
+			const listItem = document.createElement("li");
+			listItem.draggable = true;
+			listItem.onclick = () => setSongIndex(index);
+			listItem.ondragstart = dragStart;
+			listItem.ondragover = dragOver;
+			listItem.ondragleave = dragLeave;
+			listItem.ondrop = drop;
+			if (index == songIndex) listItem.classList.add("current");
+			const div = document.createElement("div");
+			dir = songFile.replace(/(^|\/)[^\/]+$/, ""); // remove filename
+			if (dir) {
+				const dirspan = document.createElement("span");
+				dirspan.className = "dir";
+				dirspan.textContent = songFile.replace(/\/[^\/]+$/, ""); // remove filename
+				div.appendChild(dirspan);
 			}
+			const span = document.createElement("span");
+			span.textContent = songFile.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
+			div.appendChild(span);
+			listItem.appendChild(div);
+			/* 
+			appendButton(listItem, "↑", (event) => {
+				moveSong(index, index-1);
+				event.stopPropagation();
+			})
+			appendButton(listItem, "↓", (event) => {
+				moveSong(index, index+1);
+				event.stopPropagation();
+			})
+			*/
+			appendButton(listItem, "×", (event) => {
+				removeSongFromList(index);
+				event.stopPropagation();
+			})
+
+			songListElement.appendChild(listItem);
+		});
+	}
+
+	async function onchangeList() {
+		if (!listsNode.value) return;
+		updateCurrentListFile(listsNode.value);
+	}
+
+	async function setSongIndex(index) {
+		if (index < 0 || index >= currentList.length) return;
+		const songFile = currentList[index];
+		const currentSongData = await GET(`/songs/${songFile}`);
+		updateSongIndex(`${index}`);
+	}
+
+	async function moveSong(index1, index2) {
+		if (index1 < 0 || index1 >= currentList.length ||
+			index2 < 0 || index2 >= currentList.length ||
+			index1 == index2)
+			return;
+		currentList.splice(index2, 0, currentList.splice(index1, 1));
+		updateCurrentList(currentList.join('\n'));
+		if (index1 == songIndex) updateSongIndex(index2);
+		else if (index2 == songIndex) updateSongIndex(index1);
+	}
+
+	async function saveList() {
+		const name = window.prompt("Type list filename!", listsNode.value).replace(/\.txt$/, "");
+		if (name.length) {
+			await PUT(`/lists/${name}.txt`, currentList.join("\n"));
+			console.log("List saved as", name+".txt",);
+			await fetchLists();
 		}
+	}
 
-		async function removeSongFromList(index) {
-			currentList.splice(index, 1);
-			updateCurrentList(currentList.join('\n'));
-		}
+	async function removeSongFromList(index) {
+		currentList.splice(index, 1);
+		updateCurrentList(currentList.join('\n'));
+	}
 
-		/* Drag&Drop reordering */
-		function dragStart(e) {
-			e.dataTransfer.effectAllowed = "move";
-			e.dataTransfer.setData("text/html", null);
-			index1 = Array.from(e.target.parentNode.children).indexOf(e.target);
-		};
+	/* Drag&Drop reordering */
+	function dragStart(e) {
+		e.dataTransfer.effectAllowed = "move";
+		e.dataTransfer.setData("text/html", null);
+		index1 = Array.from(e.target.parentNode.children).indexOf(e.target);
+	};
 
-		function dragOver(e) {
-			event.preventDefault();
-			event.dataTransfer.dropEffect = "move";
-			let node = e.target;
-			while (node.parentNode !== songListElement) node = node.parentNode;
-			node.classList.add("over");
-		}
+	function dragOver(e) {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "move";
+		let node = e.target;
+		while (node.parentNode !== songListElement) node = node.parentNode;
+		node.classList.add("over");
+	}
 
-		function dragLeave(e) {
-			event.preventDefault();
-			let node = e.target;
-			while (node.parentNode !== songListElement) node = node.parentNode;
-			node.classList.remove("over");
-		}
+	function dragLeave(e) {
+		event.preventDefault();
+		let node = e.target;
+		while (node.parentNode !== songListElement) node = node.parentNode;
+		node.classList.remove("over");
+	}
 
-		function drop(e) {
-			event.preventDefault();
-			let node = e.target;
-			while (node.parentNode !== songListElement) node = node.parentNode;
-			node.classList.remove("over");
-			const index2 = Array.from(node.parentNode.children).indexOf(node);
-			moveSong(index1, index2);
-		}
+	function drop(e) {
+		event.preventDefault();
+		let node = e.target;
+		while (node.parentNode !== songListElement) node = node.parentNode;
+		node.classList.remove("over");
+		const index2 = Array.from(node.parentNode.children).indexOf(node);
+		moveSong(index1, index2);
+	}
 
-		fetchLists();
-		setInterval(fetchLists, 30000);
+	fetchLists();
+	setInterval(fetchLists, 30000);
 
-	</script>
+</script>
 </body>

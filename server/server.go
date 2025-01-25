@@ -38,7 +38,7 @@ func handleFileList(w http.ResponseWriter, r *http.Request) {
 	for _, entry := range entries {
 		if entry.IsDir() {
 			fmt.Fprintln(w, entry.Name()+"/")
-		} else {
+		} else if entry.Name()[0] != '.' {
 			fmt.Fprintln(w, entry.Name())
 		}
 	}

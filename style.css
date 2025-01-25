@@ -2,6 +2,7 @@ html,
 iframe {
 	padding: 0;
 	margin: 0;
+	overflow-x: hidden;
 }
 
 body {
@@ -40,7 +41,7 @@ main {
 
 ul, ol {
 	list-style: none;
-	padding: 0 0 4rem 0;
+	padding: 3rem 0;
 	margin: 0;
 }
 
@@ -101,7 +102,7 @@ div {
 li span.dir {
 	display: block;
 	font-size: 0.8rem;
-	opacity: .6;
+	opacity: .456;
 }
 
 li span.verse {
@@ -136,12 +137,12 @@ input[type="text"],
 select {
 	width: 100%;
 	padding: 10px;
-	margin-bottom: 10px;
 	border: 1px solid #333;
 	border-radius: 5px;
 	background-color: #1e1e1e;
 	color: #ffffff;
 	box-sizing: border-box;
+	display: block;
 }
 
 input[type="text"]:focus,
@@ -158,6 +159,7 @@ select:focus {
 	justify-content: space-between;
 	align-items: center;
 	width: 100%;
+	background-color: #333;
 }
 
 #controls button {
@@ -195,6 +197,9 @@ body.connected #disconnected {
 
 .toolbar {
 	position: fixed;
+	width: 100%;
+	z-index: 10;
+	box-shadow: 0 .5rem 1rem black;
 }
 .toolbar button {
 	width: 3rem;

@@ -11,7 +11,7 @@ GOOS=darwin GOARCH=arm64 go build -o ../arena-mac-arm64 arena.go
 GOOS=windows GOARCH=amd64 go build -o ../arena-win-amd64.exe arena.go
 cd ../..
 
-zip -r lenverse-0.2.0.zip \
+zip -r lenverse-0.3.0.zip \
     songs/* \
     lists/* \
     current/* \

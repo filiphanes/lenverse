@@ -5,40 +5,63 @@
     <script src="script.js"></script>
 </head>
 <body>
-<input type="text" id="searchInput" placeholder="Search..." oninput="filterSongs()" style="width: calc(100% - 2rem);" />
-<input type="checkbox" id="searchContent" onchange="filterSongs()" title="Search in content" />
-<ul id="songList"></ul>
+<section class="toolbar">
+    <select id="folders" onchange="onchangeFolder()"></select>
+</section>
+<ul id="songs"></ul>
+<section id="controls">
+    <input type="text" id="filterInput" placeholder="Filter" oninput="filterSongs()" />
+    <input type="checkbox" id="searchContent" onchange="filterSongs()" title="Search in content" />
+</section>
 <script>
-    const songListElement = document.getElementById("songList");
-    const searchInput = document.getElementById("searchInput");
+    const foldersNode = document.getElementById("folders");
+    const songsNode = document.getElementById("songs");
+    const filterInput = document.getElementById("filterInput");
     const searchContent = document.getElementById("searchContent");
-    const cachedSongs = {};
+    const normalizedSongs = {};
     const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+    let folders = [""];
+    let currentFolder = "";
 
     async function fetchDirRecursive(dir, prefix) {
         if (prefix === undefined) prefix = '';
         const data = await GET(dir+prefix);
         const names = data.trim().split("\n");
         for (let i=0; i<names.length; i++) {
-            if (names[i].endsWith('/')) {
-                const subnames = await fetchDirRecursive(dir, prefix+names[i]);
+            const name = names[i];
+            if (name.endsWith('/')) {
+                folders.push(name);
+                const subnames = await fetchDirRecursive(dir, prefix+name);
                 names.splice(i, 1, ...subnames);
                 i += subnames.length - 1;
             } else {
-                names[i] = prefix+names[i];
+                names[i] = prefix+name;
             }
         }
         return names;
     }
 
     async function fetchSongs() {
+        folders.splice(1); // remove all except empty prefix
         let songFiles = await fetchDirRecursive('/songs/');
         songFiles.sort(collator.compare);
         renderSongList(songFiles);
+        renderFolders(folders);
     }
-
+    
+    function renderFolders(folders) {
+        foldersNode.innerHTML = "";
+        console.log('folders', folders)
+        for (let folder of folders) {
+            const option = document.createElement("option");
+            option.value = folder;
+            option.textContent = folder.substr(0, folder.length-1);
+            foldersNode.appendChild(option);
+        }
+    }
+    
     function renderSongList(songFiles) {
-        songListElement.innerHTML = "";
+        songsNode.innerHTML = "";
         songFiles.forEach(songFile => {
             const li = document.createElement("li");
             li.dataset.file = songFile;
@@ -47,27 +70,27 @@
             if (dir) {
                 const dirspan = document.createElement("span");
                 dirspan.className = "dir";
-                dirspan.textContent = songFile.replace(/\/[^\/]+$/, ""); // remove filename
+                dirspan.textContent = dir;
                 div.appendChild(dirspan);
             }
             const span = document.createElement("span");
             span.textContent = songFile.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
             div.appendChild(span);
             li.appendChild(div);
-            appendButton(li, "+", () => addToList(songFile));
+            li.onclick = () => addToList(songFile);
             appendButton(li, "✎", () => edit(songFile));
-            songListElement.appendChild(li);
+            songsNode.appendChild(li);
         });
         filterSongs();
     }
 
     async function filterSongs() {
-        const query = normalizeText(searchInput.value);
-        for (const li of songListElement.children) {
-            li.style.display = normalizeText(li.textContent).includes(query) ? "" : "none";
+        const query = normalizeText(filterInput.value);
+        for (const li of songsNode.children) {
+            li.style.display = normalizeText(li.textContent).includes(query) && li.dataset.file.startsWith(currentFolder) ? "" : "none";
         }
         if (searchContent.checked) {
-            for (const li of songListElement.children) {
+            for (const li of songsNode.children) {
                 const content = await getCachedSong(li.dataset.file)
                 if (content.includes(query) && li.style.display == "none") {
                     li.style.display = "";
@@ -76,11 +99,16 @@
         }
     }
     
+    function onchangeFolder() {
+        currentFolder = foldersNode.value;
+        filterSongs();
+    }
+
     async function getCachedSong(songFile) {
-        let content = cachedSongs[songFile];
+        let content = normalizedSongs[songFile];
         if (content === undefined) {
             content = await GET(`/songs/${encodeURIComponent(songFile)}`);
-            cachedSongs[songFile] = normalizeText(content);
+            normalizedSongs[songFile] = normalizeText(content);
         }
         return content;
     }
