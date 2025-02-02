@@ -71,11 +71,17 @@
 
 			// Make plain text version
 			let txt = "";
-			for (const node of versesListElement.children[index].childNodes) {
-				if (node.nodeName === "#text" || node.nodeName == "p") {
+			for (let node of versesListElement.children[index].childNodes) {
+				console.log(node.nodeName, node.textContent)
+				if (node.nodeName === "#text") {
 					txt += node.textContent;
+				} else if (node.nodeName === "P") {
+					// <p> means field, extract text from first field
+					txt = node.innerText;
+					break;
 				}
 			}
+			console.log('txt', txt)
 			PUT("/current/verse.txt", txt);
 			PUT("/current/verse.html", verses[verseIndex]);
 		}
