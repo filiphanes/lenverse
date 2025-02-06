@@ -108,6 +108,11 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 		broadcastUpdate(filePath, string(body))
 		w.WriteHeader(http.StatusOK)
+	} else if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
