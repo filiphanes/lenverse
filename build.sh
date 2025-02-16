@@ -11,20 +11,13 @@ GOOS=darwin GOARCH=arm64 go build -o ../arena-mac-arm64 arena.go
 GOOS=windows GOARCH=amd64 go build -o ../arena-win-amd64.exe arena.go
 cd ../..
 
-zip -r lenverse-0.3.0.zip \
+zip -r lenverse-0.4.0.zip \
     songs/* \
     lists/* \
     current/* \
-    index.html \
-    biblia.html \
-    songs.html \
-    lists.html \
-    verses.html \
-    editor.html \
-    full.html \
-    main.html \
+    bible/* \
+    *.html \
     script.js \
-    stage.html \
     style.css \
     server-* \
     README.md \

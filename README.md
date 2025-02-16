@@ -4,7 +4,7 @@ Just simple presentation from txt files and setlists.
 
 - Song verses are in empty line delimited files in `songs/` directory or OpenLyrics xml, OpenSong xml, ProPresenter API JSON
 - Setlists are in `lists` directory, each line is relative path from `songs/` folder
-- In `current/` directory there is currently selected list, songs, songindex, verse, verseindex
+- In `current/` directory there is currently selected listpath, songs, songpath, verse, verseindex
 - Connect to websocket `ws://127.0.0.1:5005/current/verse.txt` to receive updates on current verse.
 - Connecting to any file path `ws://127.0.0.1:5005/<filepath>` server will send updates to that file
 - Sending message to websocket, rewrites that filepath
@@ -64,3 +64,4 @@ Just simple presentation from txt files and setlists.
 - [ ] installable gui app
 - [ ] watch filesystem changes and broadcast them to ws clients
 - [ ] websocket listen to changes on dirs `songs/` and `lists/`
+- [ ] server wildcard songPath GET 003*?wild=1 will return redirect to "003 Amazing grace.txt"

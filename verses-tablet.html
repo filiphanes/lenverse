@@ -1,12 +1,39 @@
 <!DOCTYPE html>
 
 <head>
-	<title>Verses</title>
+	<title>Verses Tablet</title>
 	<link rel="stylesheet" href="style.css" />
 	<script src="script.js"></script>
+	<style>
+		#verseList {
+			display: inline-flex;
+			gap: 1vw;
+			flex-wrap: wrap;
+		}
+		#verseList li {
+			width: 30vw;
+		}
+		li h2 {
+			display: none;
+		}
+		#songList {
+			padding: .25rem;
+			position: fixed;
+			top: 0;
+			left: 0;
+		}
+		#songList li {
+			display: inline-block;
+			margin: 0 .25rem 0 0;
+		}
+		#songList li.current {
+			background: darkgreen;
+		}
+	</style>
 </head>
 
 <body>
+	<ol id="songList"></ol>
 	<ol id="verseList"></ol>
 	<section id="controls">
 		<button title="Prev" onclick="selectVerse(verseIndex-1)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M744-160 280-624v264h-80v-400h400v80H336l464 464-56 56Z"/></svg></button>
@@ -16,35 +43,56 @@
 	<svg id="disconnected" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M792-56 400-448v174l62-62 58 56-160 160-160-160 58-56 62 62v-254L56-792l56-56 736 736-56 56ZM640-434l-80-80v-174l-64 64-56-56 160-160 160 160-56 56-64-64v254Z"/></svg>
 
 	<script>
-		const versesListElement = document.getElementById("verseList");
+		const verseList = document.getElementById("verseList");
+		const songList = document.getElementById("songList");
 		const hideButton = document.getElementById("hide");
-		let currentSongPath = 0;
+		let songPaths = [];
+		let songPath = "";
 		let verses = [];
 		let verseIndex = 0;
 		let hidden = false;
 
+		connectToFileWebSocket("/lists/tablet.txt", async data => {
+			songPaths = data.split('\n');
+			renderSongs(songPaths);
+		});
+
 		connectToFileWebSocket("/current/songpath.txt", async data => {
-			if (currentSongPath == data) return;
-			currentSongPath = data;
-			verses = await parseSong(currentSongPath) || [];
+			if (songPath == data) return;
+			songPath = data;
+			verses = await parseSong(songPath) || [];
 			renderVerses();
 			selectVerse(verseIndex, true);
+			for (const li of songList.children) {
+				li.classList.toggle("current", li.path == songPath);
+			}
 		});
 
 		const updateVerseIndex = connectToFileWebSocket("/current/verseindex.txt", data => {
-			if (verseIndex === +data) return;
-			verseIndex = +data;
+			const verseIndex = parseInt(data);
 			selectVerse(verseIndex, true);
 		});
 
+		function renderSongs(paths) {
+			songList.innerHTML = "";
+			paths.forEach((path, i) => {
+				const li = document.createElement("li");
+            	li.textContent = path.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
+				li.path = path;
+				li.classList.toggle("current", path == songPath);
+				li.onclick = () => selectSong(path);
+				songList.appendChild(li);
+			});
+		}
+
 		function renderVerses() {
-			versesListElement.innerHTML = "";
+			verseList.innerHTML = "";
 			verses.forEach((verse, i) => {
 				const listItem = document.createElement("li");
 				listItem.innerHTML = verse;
 				listItem.classList.toggle("current", i === verseIndex);
 				listItem.onclick = () => selectVerse(i);
-				versesListElement.appendChild(listItem);
+				verseList.appendChild(listItem);
 			});
 			updateTimers();
 		}
@@ -52,13 +100,14 @@
 		async function selectVerse(index, dontUpdate) {
 			if (index < 0 ||
 				index >= verses.length ||
-				!versesListElement.children[index]
+				verseIndex == index ||
+				!verseList.children[index]
 			) return;
 			verseIndex = index;
 			// Clear and set current verse class
-			for (const li of versesListElement.children) li.classList.remove("current");
-			versesListElement.children[index].classList.add("current");
-			versesListElement.children[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+			for (const li of verseList.children) li.classList.remove("current");
+			verseList.children[index].classList.add("current");
+			verseList.children[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
 			if (!dontUpdate) updateVerseIndex(`${index}`);
 			if (hidden) return;
 
@@ -67,7 +116,7 @@
 			// Make plain text version
 			let txt = "";
 			let pindex = 0;
-			for (const node of versesListElement.children[index].getElementsByTagName("P")) {
+			for (const node of verseList.children[index].getElementsByTagName("P")) {
 				pindex++;
 				txt = node.innerText;
 				console.log('txt', pindex, txt)
@@ -76,10 +125,14 @@
 			}
 
 			if (pindex > 0) return;
-			for (let node of versesListElement.children[index].childNodes) {
+			for (let node of verseList.children[index].childNodes) {
 				if (node.nodeName === "#text") txt += node.textContent;
 			}
 			PUT("/current/verse.txt", txt);
+		}
+		
+		async function selectSong(path) {
+			await PUT('/current/songpath.txt', path)
 		}
 		
 		async function toggleHidden() {
@@ -88,8 +141,6 @@
 			if (hidden) {
 				PUT("/current/verse.html", "");
 				PUT("/current/verse.txt", "");
-				PUT("/current/verse1.txt", "");
-				PUT("/current/verse2.txt", "");
 			} else {
 				selectVerse(verseIndex);
 			}

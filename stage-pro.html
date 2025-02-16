@@ -1,6 +1,7 @@
 <!DOCTYPE html>
+
 <head>
-	<title>Stage</title>
+	<title>Stage Pro</title>
 	<script src="script.js"></script>
 	<style>
 		body {
@@ -19,11 +20,11 @@
 		}
 
 		#verseList li {
-			text-align: left;
-			white-space: pre;
+			text-align: center;
 			line-height: 1;
 			transition: all .2s;
 			width: 100vw;
+			min-height: 15vw;
 		}
 
 		#verseList li.current {
@@ -36,16 +37,62 @@
 		}
 
 		h1,
-		h2,
 		blockquote,
 		sup {
 			display: none;
+		}
+
+		h2 {
+			background: #ff1c71;
+			color: black;
+			border-radius: 2vw;
+			font-size: 2vw;
+			width: 30%;
+			margin: 0 auto 2vw;
+			display: block;
+		}
+
+		p {
+			display: none;
+			margin: 0 0 3vw;
+			white-space: pre;
+			text-wrap: auto;
+		}
+
+		/* Show first paragraph by default */
+		#verseList li p:first-of-type {
+			display: block;
+		}
+
+		/* When third paragraph is NOT empty */
+		#verseList li p:nth-of-type(3):not(:empty) {
+			display: block;
+		}
+
+		/* Hide first paragraph when third is NOT empty */
+		#verseList li:has(> p:nth-of-type(3):not(:empty)) > p:first-of-type {
+			display: none;
+		}
+		.sub-timers {
+			display: flex;
+			position: fixed;
+			bottom: 0;
+			width: 100vw;
+			justify-content: space-between;
 		}
 	</style>
 </head>
 
 <body>
 	<ol id="verseList"></ol>
+	<div class="sub-timers">
+		<div class="sub-timer">
+			<time>H:mm</time>
+		</div>
+		<div class="sub-timer">
+			<time until datetime="17:45:00">H:mm</time>
+		</div>
+	</div>
 	<script>
 		const verseList = document.getElementById("verseList");
 		let currentSongPath = 0;
@@ -54,7 +101,7 @@
 
 		function scrollToIndex(index) {
 			Array.from(verseList.children).forEach((li, i) => {
-				li.classList.toggle('current', i<=index)
+				li.classList.toggle('current', i <= index)
 				if (i == index) {
 					li.scrollIntoView({ behavior: 'smooth', block: 'start' });
 				}
@@ -84,6 +131,7 @@
 			}
 		}
 
+		updateTimers();
 		setInterval(updateTimers, 1000);
 	</script>
 </body>

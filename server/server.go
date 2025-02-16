@@ -62,9 +62,19 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 			filePath = filepath.Join(baseDir, "index.html")
 		}
 
-		stat, err := os.Stat(filePath)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+		stat, errStat := os.Stat(filePath)
+		if errStat != nil {
+			matches, err := filepath.Glob(filePath)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			for _, match := range matches {
+				w.Header().Set("Location", "/"+match)
+				w.WriteHeader(http.StatusFound)
+				return
+			}
+			http.Error(w, errStat.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -95,6 +105,7 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(content)
+
 	} else if r.Method == http.MethodPut {
 		// TODO: don't allow writing to any file
 		body, err := io.ReadAll(r.Body)
@@ -107,7 +118,9 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		broadcastUpdate(filePath, string(body))
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusOK)
+
 	} else if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
@@ -176,9 +189,13 @@ func main() {
 	if len(listen) == 0 {
 		listen = "127.0.0.1:5005"
 	}
+	absolutePath, err := filepath.Abs(baseDir)
+	if err != nil {
+		log.Fatalf("Failed to get absolute path: %v", err)
+	}
 
 	log.Printf("Listening on http://%s/\n", listen)
-	log.Printf("Serving dir '%s'\n", baseDir)
+	log.Printf("Serving from %s\n", absolutePath)
 	if err := http.ListenAndServe(listen, nil); err != nil {
 		println("Error starting server:", err)
 	}

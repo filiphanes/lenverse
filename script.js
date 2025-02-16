@@ -239,7 +239,6 @@ async function parseSong(filename, raw) {
 		verses = parseText(raw);
 		console.log('Parsed as Text');
 	}
-	console.log("Parsed verses", verses);
 	return verses;
 }
 
@@ -337,7 +336,7 @@ function patchDate(date, s) {
 
 function doNothing() {}
 
-function updateTimers() {
+async function updateTimers() {
 	const now = new Date();
 	for (let i=0; i < timeElements.length; i++) {
 		const element = timeElements[i];
@@ -347,27 +346,33 @@ function updateTimers() {
 				element.updateTextContent = doNothing();
 				continue;
 			}
-			const since = element.hasAttribute('since');
-			const until = element.hasAttribute('until');
-			const datetime = element.getAttribute('datetime');
-			let target;
+			const sinceSrc = element.getAttribute('since-src');
+			const since = element.hasAttribute('since') || (sinceSrc && await GET(sinceSrc));
+			const untilSrc = element.getAttribute('until-src');
+			const until = element.hasAttribute('until') || (untilSrc && await GET(untilSrc));
+			const datetime =  element.getAttribute('datetime');
+			let target = now;
 			if (!datetime) {
 				target = now;
 			} else if (datetime.startsWith('P')) {
-				target = addPeriodToDate(now, datetime);
+				if (since) target = patchDate(today, since);
+				// TODO: else if (until) target = patchDate(today, until);
+				target = addPeriodToDate(target, datetime);
 			} else {
 				target = patchDate(today, datetime);
 			}
 			
 			if (until) {
 				element.updateTextContent = function (now) {
-					const d = new Date(target - now);
-					this.textContent = formatDate(d, format);
+					const diff = target - now;
+					this.textContent = formatDate(new Date(diff), format);
+					if (diff >= 0) this.classList.add('finished');
 				}
 			} else if (since) {
 				element.updateTextContent = function (now) {
-					const d = new Date(now - target);
-					this.textContent = formatDate(d, format);
+					const diff = now - target;
+					this.textContent = formatDate(new Date(diff), format);
+					if (diff <= 0) this.classList.add('finished');
 				}
 			} else {
 				element.updateTextContent = function(now) {

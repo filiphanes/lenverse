@@ -60,13 +60,13 @@
         }
     }
     
-    function renderSongList(songFiles) {
+    function renderSongList(songPaths) {
         songsNode.innerHTML = "";
-        songFiles.forEach(songFile => {
+        songPaths.forEach(songPath => {
             const li = document.createElement("li");
-            li.dataset.file = songFile;
+            li.dataset.path = songPath;
             const div = document.createElement("div");
-            dir = songFile.replace(/(^|\/)[^\/]+$/, ""); // remove filename
+            dir = songPath.replace(/(^|\/)[^\/]+$/, ""); // remove filename
             if (dir) {
                 const dirspan = document.createElement("span");
                 dirspan.className = "dir";
@@ -74,11 +74,11 @@
                 div.appendChild(dirspan);
             }
             const span = document.createElement("span");
-            span.textContent = songFile.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
+            span.textContent = songPath.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and extension
             div.appendChild(span);
             li.appendChild(div);
-            li.onclick = () => addToList(songFile);
-            appendButton(li, "✎", () => edit(songFile));
+            li.onclick = () => onclickSong(songPath);
+            appendButton(li, "✎", () => edit(songPath));
             songsNode.appendChild(li);
         });
         filterSongs();
@@ -87,11 +87,11 @@
     async function filterSongs() {
         const query = normalizeText(filterInput.value);
         for (const li of songsNode.children) {
-            li.style.display = normalizeText(li.textContent).includes(query) && li.dataset.file.startsWith(currentFolder) ? "" : "none";
+            li.style.display = normalizeText(li.textContent).includes(query) && li.dataset.path.startsWith(currentFolder) ? "" : "none";
         }
         if (searchContent.checked) {
             for (const li of songsNode.children) {
-                const content = await getCachedSong(li.dataset.file)
+                const content = await getCachedSong(li.dataset.path)
                 if (content.includes(query) && li.style.display == "none") {
                     li.style.display = "";
                 }
@@ -113,10 +113,8 @@
         return content;
     }
 
-    async function addToList(songFile) {
-        let currentListData = await GET("/current/list.txt");
-        console.log("Adding song to list:", songFile);
-        await PUT("/current/list.txt", currentListData.trim()+'\n'+songFile);
+    async function onclickSong(songPath) {
+        await PUT('/current/songpath.txt', songPath);
     }
     
     function edit(songFile) {

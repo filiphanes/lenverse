@@ -57,7 +57,7 @@ li {
 	white-space: pre;
 	cursor: pointer;
 }
-#versesList > li {
+#verseList > li {
 	flex-direction: column;
 }
 
@@ -73,6 +73,7 @@ li p {
 	width: 100%;
 	margin: .5rem 0 0;
 	padding: .5rem 0 0;
+	text-wrap: wrap;
 }
 li p:first-of-type {
 	border-top: none;
