@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animovaný kríž v Three.js</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script>
+        // Nastavenie scény, kamery a renderera s antialiasingom
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        camera.position.z = 5;
+        
+        // Vertikálna časť kríža
+        const verticalGeometry = new THREE.BoxGeometry(0.1, 2, 0.1);
+        const verticalEdges = new THREE.EdgesGeometry(verticalGeometry);
+        const verticalLine = new THREE.LineSegments(verticalEdges, new THREE.LineBasicMaterial({ color: 0xffffff }));
+        
+        // Horizontálna časť kríža
+        const horizontalGeometry = new THREE.BoxGeometry(1, 0.1, 0.1);
+        const horizontalEdges = new THREE.EdgesGeometry(horizontalGeometry);
+        const horizontalLine = new THREE.LineSegments(horizontalEdges, new THREE.LineBasicMaterial({ color: 0xffffff }));
+        
+        horizontalLine.position.y = 0.5; // Posunutie horizontálnej časti nahor
+        
+        // Skupina pre kríž
+        const cross = new THREE.Group();
+        cross.add(verticalLine);
+        cross.add(horizontalLine);
+        scene.add(cross);
+        
+        // Osvetlenie (ponechané pre budúce použitie, nemá efekt na čiary)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(0, 0, 5);
+        scene.add(pointLight);
+        
+        // Post-processing pre žiar
+        const composer = new THREE.EffectComposer(renderer);
+        const renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;    // Citlivosť žiaru
+        bloomPass.strength = 1.5;   // Sila žiaru
+        bloomPass.radius = 0.5;     // Rozsah žiaru
+        composer.addPass(bloomPass);
+        
+        // Animácia hojdania okolo osi Y
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.001; // Čas v sekundách
+            cross.rotation.y = Math.sin(time) * 0.1; // Hojdanie okolo osi Y
+            composer.render(); // Renderovanie so žiarom
+        }
+        animate();
+    </script>
+</body>
+</html>

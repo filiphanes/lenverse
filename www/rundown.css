@@ -1,0 +1,194 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: system-ui;
+  background: black;
+  color: white;
+  text-align: left;
+  margin: 0;
+  padding: 0;
+  --parallel-border: 1px solid green;
+  --sequence-border: 1px solid orange;
+  --firstenter-border: 1px solid purple;
+  --firstnext-border: 1px solid purple;
+  --random-border: 1px solid pink;
+  --playing-meter-color: #4caf50;
+  --paused-meter-color: yellow;
+}
+ol {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  break: both;
+}
+li.header {
+  font-size: .7rem;
+}
+li {
+  margin: 0;
+  display: block;
+  background: #222;
+  display: flex;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+li:nth-child(odd) {
+  background: #151515;
+}
+li.selected {
+  background: midnightblue;
+}
+li.memo > span.icon::before { content: "Ⓜ"; }
+li.memo > span.name { font-style: italic; }
+li.text > span.icon::before { content: "Ⓣ"; }
+li.playing > span.icon::before { color: green; }
+
+li > span {
+  display: block;
+  overflow: hidden;
+  width: 3rem;
+  text-align: center;
+  padding: 0.4rem 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+span.icon {
+  width: 1.5rem;
+  color: gray;
+}
+span.code {
+  width: 3rem;
+  text-align: center;
+}
+span.name {
+  padding: 0.4rem 0 0.4rem 1.5rem;
+  flex-grow: 1;
+  text-align: left;
+}
+span.startTime {
+  width: 5rem;
+}
+span.duration {
+  width: 5rem;
+  background-size: 200% 100%;
+  background-position-x: 100%;
+}
+li.playing > span.duration {
+  border: 1px solid green;
+  background-image: linear-gradient(to right, var(--playing-meter-color) 50%, transparent 50%);
+}
+li.paused > span.duration {
+  border: 1px solid yellow;
+  background-image: linear-gradient(to right, var(--paused-meter-color) 50%, transparent 50%);
+}
+li.group > ol span.name {
+  padding-left: 3rem;
+  white-space: pre;
+}
+/* Group parallel */
+li.group.parallel > span.name {
+  border-top: var(--parallel-border);
+}
+li.group.parallel:has(> ol:empty) > span.name,
+li.group.parallel li:last-child > span.name,
+li.group.parallel.folded > span.name {
+  border-bottom: var(--parallel-border);
+}
+li.group.parallel span.name {
+  border-left: var(--parallel-border);
+  border-right: var(--parallel-border);
+}
+/* Group sequence */
+li.group.sequence > span.name {
+  border-top: var(--sequence-border);
+}
+li.group.sequence:has(> ol:empty) > span.name,
+li.group.sequence li:last-child > span.name,
+li.group.sequence.folded > span.name {
+  border-bottom: var(--sequence-border);
+}
+li.group.sequence span.name {
+  border-left: var(--sequence-border);
+  border-right: var(--sequence-border);
+}
+/* Group random */
+li.group.random > span.name {
+  border-top: var(--random-border);
+}
+li.group.random:has(> ol:empty) > span.name,
+li.group.random li:last-child > span.name,
+li.group.random.folded > span.name {
+  border-bottom: var(--random-border);
+}
+li.group.random span.name {
+  border-left: var(--random-border);
+  border-right: var(--random-border);
+}
+/* Group firstenter */
+li.group.firstenter > span.name {
+  border-top: var(--firstenter-border);
+}
+li.group.firstenter:has(> ol:empty) > span.name,
+li.group.firstenter li:last-child > span.name,
+li.group.firstenter.folded > span.name {
+  border-bottom: var(--firstenter-border);
+}
+li.group.firstenter span.name {
+  border-left: var(--firstenter-border);
+  border-right: var(--firstenter-border);
+}
+/* Group firstnext */
+li.group.firstnext > span.name {
+  border-top: var(--firstnext-border);
+}
+li.group.firstnext:has(> ol:empty) > span.name,
+li.group.firstnext li:last-child > span.name,
+li.group.firstnext.folded > span.name {
+  border-bottom: var(--firstnext-border);
+}
+li.group.firstnext span.name {
+  border-left: var(--firstnext-border);
+  border-right: var(--firstnext-border);
+}
+li.group > span.name::before {
+  content: "⏷ ";
+  position: relative;
+  left: -1rem;
+  width: 0;
+  display: inline-block;
+}
+li.group.folded > span.name::before {
+  content: "⏵ ";
+}
+li.folded > ol {
+  height: 0;
+}
+.group.song > ol > li > span.name {
+  display: flex;
+  justify-content: space-between;
+}
+span.name > h2 {
+  order: 5;
+  padding: 0 1rem;
+}
+span.name > p {
+  min: 9rem;
+}
+span.name > * {
+  font-size: 1rem;
+  margin: 0;
+}
+.controls {
+  display: flex;
+  display: none;
+  gap: .4rem;
+}
+.controls button {
+  width: 2rem;
+  height: 2rem;
+  color: white;
+  background: transparent;
+  border: 1px solid gray;
+  border-radius: .4rem;
+}

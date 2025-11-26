@@ -1,115 +1,193 @@
-const express = require("express");
-const WebSocket = require("ws");
+const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const WebSocket = require("ws");
+const mime = require("mime-types");
 
-const app = express();
-const PORT = 5005;
+const baseDir = ".";
+const LISTEN = process.env.LISTEN || "127.0.0.1:5005";
+const connections = {};
 
-// Base directories for songs and lists
-const BASE_DIR = ".";
-const SONGS_DIR = path.join(BASE_DIR, "songs");
-const LISTS_DIR = path.join(BASE_DIR, "lists");
-const CURRENT_DIR = path.join(BASE_DIR, "current");
+const server = http.createServer((req, res) => {
+  const urlPath = decodeURI(req.url);
+  const filePath = path.join(baseDir, urlPath === "/" ? "index.html" : urlPath.slice(1));
+  const method = req.method;
+  console.log(req.method, req.url);
+
+  // Handle OPTIONS for CORS
+  if (method === "OPTIONS") {
+    res.writeHead(200, {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, PUT, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    });
+    res.end();
+    return;
+  }
+
+  // Handle directory listing
+  if (method === "GET" && filePath.endsWith("/")) {
+    try {
+      const entries = fs.readdirSync(filePath, { withFileTypes: true });
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      entries.forEach(entry => {
+        if (entry.isDirectory()) {
+          res.write(entry.name + "/\n");
+        } else if (entry.name[0] !== ".") {
+          res.write(entry.name + "\n");
+        }
+      });
+      res.end();
+      return;
+    } catch (err) {
+      res.writeHead(500);
+      res.end(err.message);
+      return;
+    }
+  }
+
+  // Handle GET for files
+  if (method === "GET") {
+    try {
+      const stats = fs.statSync(filePath);
+      if (stats.isDirectory()) {
+        // Redirect if glob matches (mimics Go's filepath.Glob)
+        const matches = globMatch(filePath);
+        if (matches.length > 0) {
+          res.writeHead(302, { Location: "/" + matches[0] });
+          res.end();
+          return;
+        }
+        res.writeHead(404);
+        res.end("Not found");
+        return;
+      }
+
+      const content = fs.readFileSync(filePath);
+      let contentType = mime.lookup(filePath) || "application/octet-stream";
+      if (path.extname(filePath).toLowerCase() === ".md") {
+        contentType = "text/markdown";
+      }
+      res.writeHead(200, {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+      });
+      res.end(content);
+    } catch (err) {
+      res.writeHead(404);
+      res.end(err.message);
+      console.log(err);
+    }
+    return;
+  }
+
+  // Handle PUT for file updates
+  if (method === "PUT") {
+    let body = "";
+    req.on("data", chunk => (body += chunk));
+    req.on("end", () => {
+      try {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, body, { mode: 0o644 });
+        broadcastUpdate(filePath, body);
+        res.writeHead(200, { "Access-Control-Allow-Origin": "*" });
+        res.end();
+      } catch (err) {
+        res.writeHead(500);
+        res.end(err.message);
+        console.log(err);
+      }
+    });
+    return;
+  }
+
+  res.writeHead(405);
+  res.end("Method not allowed");
+});
 
 // WebSocket server
 const wss = new WebSocket.Server({ noServer: true });
-const connections = {};
-
-// Helper function to list files recursively
-function listFilesRecursive(directory) {
-    const fileList = [];
-    if (fs.existsSync(directory)) {
-        fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => {
-            const fullPath = path.join(directory, entry.name);
-            if (entry.isDirectory()) {
-                fileList.push(...listFilesRecursive(fullPath));
-            } else if (entry.isFile()) {
-                fileList.push(fullPath);
-            }
-        });
-    }
-    return fileList;
-}
-
-app.use(express.text({ type: "*/*" }));
-
-app.get("/songs/", (req, res) => {
-    res.send(listFilesRecursive(SONGS_DIR).map(p => path.relative(SONGS_DIR, p)).join('\n'));
-});
-
-app.get("/lists/", (req, res) => {
-    res.send(listFilesRecursive(LISTS_DIR).map(p => path.relative(LISTS_DIR, p)).join('\n'));
-});
-
-app.get("/current/", (req, res) => {
-    res.send(listFilesRecursive(CURRENT_DIR).map(p => path.relative(CURRENT_DIR, p)).join('\n'));
-});
-
-app.put("/:dir/:filePath", (req, res) => {
-    const filePath = path.join(BASE_DIR, req.params.dir, req.params.filePath);
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, req.body, "utf-8");
-    broadcastFileUpdate(req.params.dir+'/'+req.params.filePath, req.body);
-    res.send("Updated");
-});
-
-// Serve static files
-app.use(express.static(BASE_DIR, {
-    dotfiles: "allow",
-    etag: false,
-}));
-
-// WebSocket handling
-function broadcastFileUpdate(filePath, content) {
-    if (connections[filePath]) {
-        connections[filePath].forEach((ws) => {
-            try {
-                ws.send(content);
-            } catch {
-                // Ignore errors
-            }
-        });
-    }
-}
 
 wss.on("connection", (ws, filePath) => {
-    const fullPath = path.join(BASE_DIR, filePath);
+  console.log("+WS", filePath);
+  const fullPath = path.join(baseDir, filePath);
 
-    // Send the current file content as the first message
+  // Send current file content
+  try {
     if (fs.existsSync(fullPath)) {
-        ws.send(fs.readFileSync(fullPath, "utf-8"));
+      ws.send(fs.readFileSync(fullPath, "utf-8"));
     }
+  } catch (err) {
+    console.log(err)
+  }
 
-    // Keep track of connections
-    if (!connections[filePath]) {
-        connections[filePath] = [];
+  // Store connection
+  if (!connections[filePath]) {
+    connections[filePath] = [];
+  }
+  connections[filePath].push(ws);
+
+  // Handle messages
+  ws.on("message", message => {
+    try {
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, message, { mode: 0o644 });
+      broadcastUpdate(filePath, message.toString());
+    } catch (err) {
+      // Ignore errors
     }
-    connections[filePath].push(ws);
+  });
 
-    // Handle incoming messages to update the file
-    ws.on("message", (message) => {
-        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-        fs.writeFileSync(fullPath, message, "utf-8");
-        broadcastFileUpdate(filePath, message.toString());
-    });
-
-    ws.on("close", () => {
-        connections[filePath] = connections[filePath].filter((conn) => conn !== ws);
-        if (connections[filePath].length === 0) {
-            delete connections[filePath];
-        }
-    });
+  // Handle close
+  ws.on("close", () => {
+    console.log("-WS", filePath);
+    connections[filePath] = connections[filePath].filter(conn => conn !== ws);
+    if (connections[filePath].length === 0) {
+      delete connections[filePath];
+    }
+  });
 });
 
-// Integrate WebSocket server with Express
-const server = app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+// Broadcast updates to WebSocket clients
+function broadcastUpdate(filePath, content) {
+  if (connections[filePath]) {
+    connections[filePath].forEach(conn => {
+      try {
+        conn.send(content);
+      } catch {
+        // Ignore errors
+      }
+      });
+  }
+}
 
+// Simple glob-like matching for file paths
+function globMatch(pattern) {
+  try {
+    const dir = path.dirname(pattern);
+    const base = path.basename(pattern);
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    return entries
+      .filter(entry => entry.isFile() && entry.name.startsWith(base))
+      .map(entry => path.join(dir, entry.name));
+  } catch {
+    return [];
+  }
+}
+
+// Handle WebSocket upgrades
 server.on("upgrade", (request, socket, head) => {
-    const filePath = request.url.substring(1); // Remove leading "/"
-    wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, filePath);
-    });
+  const filePath = decodeURI(request.url).substring(1);
+  wss.handleUpgrade(request, socket, head, ws => {
+    wss.emit("connection", ws, filePath);
+  });
 });
+
+// Start server
+const [host, port] = LISTEN.split(':');
+server.listen({host, port}, () => {
+  const absolutePath = path.resolve(baseDir);
+  console.log(`Listening on http://${host}:${port}/`);
+  console.log(`Serving from ${absolutePath}`);
+});
+

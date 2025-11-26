@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	baseDir     = "."
+	baseDir     = "www"
 	connections = make(map[string][]*websocket.Conn)
 	mu          sync.Mutex
 
@@ -50,7 +50,7 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Check if this is a WebSocket upgrade request
 	if websocket.IsWebSocketUpgrade(r) {
-		log.Println("WS", r.URL.Path)
+		log.Println("+WS", r.URL.Path)
 		handleWebSocket(w, r)
 		return
 	}
@@ -78,7 +78,7 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Handle recursive directory listing
+		// Handle directory listing
 		if stat.IsDir() {
 			handleFileList(w, r)
 			return
@@ -123,7 +123,7 @@ func handleFileOrWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	} else if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.WriteHeader(http.StatusOK)
 	}
@@ -160,6 +160,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
+			log.Println("-WS", r.URL.Path)
 		}()
 		for {
 			_, message, err := conn.ReadMessage()

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Media Gallery</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        #medias { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .thumb { text-align: center; cursor: pointer; border: 2px solid #555; padding: 5px; }
+        .thumb img { width: 100%; height: auto; }
+        .thumb:hover { border-color: #007acc; }
+        button { margin: 5px; padding: 10px; background: #007acc; color: white; border: none; cursor: pointer; }
+    </style>
+    <script src="script.js"></script>
+</head>
+<body>
+<ul id="medias"></ul>
+<section id="controls">
+    <input type="text" id="filterInput" placeholder="Filter" oninput="filterMedias()" />
+    <input type="checkbox" id="searchContent" onchange="filterMedias()" title="Search in names" />
+    <button onclick="playSelected()">Play</button>
+    <button onclick="pauseSelected()">Pause</button>
+    <button onclick="stopSelected()">Stop</button>
+</section>
+<script>
+    const mediasNode = document.getElementById("medias");
+    let currentMedia = '';
+
+    async function fetchMedia() {
+        folders.splice(1);
+        let mediaFiles = await fetchDirRecursive('/media/');
+        mediaFiles.sort(collator.compare);
+        renderMediaList(mediaFiles);
+        renderFolders(folders);
+    }
+    
+    function renderFolders(folders) {
+        foldersNode.innerHTML = "";
+        console.log('folders', folders)
+        for (let folder of folders) {
+            const option = document.createElement("option");
+            option.value = folder;
+            option.textContent = folder.substr(0, folder.length-1);
+            foldersNode.appendChild(option);
+        }
+    }
+    
+    function renderMediaList(mediaPaths) {
+        mediasNode.innerHTML = "";
+        mediaPaths.forEach(mediaPath => {
+            const li = document.createElement("li");
+            li.dataset.path = mediaPath;
+            const div = document.createElement("div");
+            dir = mediaPath.replace(/(^|\/)[^\/]+$/, ""); // remove filename
+            if (dir) {
+                const dirspan = document.createElement("span");
+                dirspan.className = "dir";
+                dirspan.textContent = dir;
+                div.appendChild(dirspan);
+            }
+            const img = document.createElement("img");
+            img.src = '/thumbs/' + mediaPath + '.jpg';
+            div.appendChild(img)
+            /*
+            const span = document.createElement("span");
+            span.textContent = mediaPath.replaceAll(/^.+\/|\.[^/.]+$/g, ""); // remove dir and ext
+            div.appendChild(span);
+            */
+            li.appendChild(div);
+            li.onclick = () => onclickMedia(mediaPath);
+            mediasNode.appendChild(li);
+        });
+        filterMedias();
+    }
+
+    async function onclickMedia(mediaPath) {
+        await PUT('/var/mediapath.txt', mediaPath);
+    }
+
+    function filterMedias() {
+    }
+    
+    function playSelected() {
+        if (currentVideo) ws.send(JSON.stringify({ "request-type": "PressInputPropertiesButton", "request-data": { "inputName": "Main Video", "property": "play" }, "message-id": "play" }));
+    }
+
+    function pauseSelected() { /* Similar for pause */ }
+    function stopSelected() { /* Similar for stop */ }
+</script>
+</body>
+</html>

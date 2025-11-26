@@ -1,0 +1,220 @@
+<!DOCTYPE html
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazing Grace Lyrics Animation (Anime.js 4)</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(45deg, #1e3c72, #2a5298);
+      color: #fff;
+      font-family: 'Georgia', serif;
+      overflow: hidden;
+      position: relative;
+    }
+    .container {
+      text-align: center;
+      position: relative;
+      width: 100%;
+      z-index: 2;
+    }
+    .lyric {
+      font-size: 2.5rem;
+      opacity: 0;
+      visibility: hidden; /* Hide initially */
+      position: absolute;
+      width: 100%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    .lyric span {
+      display: inline-block; /* For staggered letter animations */
+    }
+    .lyric.visible {
+      visibility: visible; /* Show during animation */
+    }
+    /* Vignette effect */
+    .vignette {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    /* Particle styles */
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+      z-index: 0;
+    }
+    @media (max-width: 600px) {
+      .lyric {
+        font-size: 1.5rem;
+      }
+      .particle {
+        width: 2px;
+        height: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="vignette"></div>
+  <div class="container">
+    <div class="lyric" id="line1"><span>A</span><span>m</span><span>a</span><span>z</span><span>i</span><span>n</span><span>g</span><span> </span><span>G</span><span>r</span><span>a</span><span>c</span><span>e</span><span>,</span><span> </span><span>h</span><span>o</span><span>w</span><span> </span><span>s</span><span>w</span><span>e</span><span>e</span><span>t</span><span> </span><span>t</span><span>h</span><span>e</span><span> </span><span>s</span><span>o</span><span>u</span><span>n</span><span>d</span></div>
+    <div class="lyric" id="line2"><span>T</span><span>h</span><span>a</span><span>t</span><span> </span><span>s</span><span>a</span><span>v</span><span>e</span><span>d</span><span> </span><span>a</span><span> </span><span>w</span><span>r</span><span>e</span><span>t</span><span>c</span><span>h</span><span> </span><span>l</span><span>i</span><span>k</span><span>e</span><span> </span><span>m</span><span>e</span></div>
+    <div class="lyric" id="line3"><span>I</span><span> </span><span>o</span><span>n</span><span>c</span><span>e</span><span> </span><span>w</span><span>a</span><span>s</span><span> </span><span>l</span><span>o</span><span>s</span><span>t</span><span>,</span><span> </span><span>b</span><span>u</span><span>t</span><span> </span><span>n</span><span>o</span><span>w</span><span> </span><span>a</span><span>m</span><span> </span><span>f</span><span>o</span><span>u</span><span>n</span><span>d</span></div>
+    <div class="lyric" id="line4"><span>W</span><span>a</span><span>s</span><span> </span><span>b</span><span>l</span><span>i</span><span>n</span><span>d</span><span>,</span><span> </span><span>b</span><span>u</span><span>t</span><span> </span><span>n</span><span>o</span><span>w</span><span> </span><span>I</span><span> </span><span>s</span><span>e</span><span>e</span></div>
+    <div class="lyric" id="line5"><span>’</span><span>T</span><span>w</span><span>a</span><span>s</span><span> </span><span>g</span><span>r</span><span>a</span><span>c</span><span>e</span><span> </span><span>t</span><span>h</span><span>a</span><span>t</span><span> </span><span>t</span><span>a</span><span>u</span><span>g</span><span>h</span><span>t</span><span> </span><span>m</span><span>y</span><span> </span><span>h</span><span>e</span><span>a</span><span>r</span><span>t</span><span> </span><span>t</span><span>o</span><span> </span><span>f</span><span>e</span><span>a</span><span>r</span></div>
+    <div class="lyric" id="line6"><span>A</span><span>n</span><span>d</span><span> </span><span>g</span><span>r</span><span>a</span><span>c</span><span>e</span><span> </span><span>m</span><span>y</span><span> </span><span>f</span><span>e</span><span>a</span><span>r</span><span>s</span><span> </span><span>r</span><span>e</span><span>l</span><span>i</span><span>e</span><span>v</span><span>e</span><span>d</span></div>
+  </div>
+
+  <!-- Anime.js 4.0.1 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/animejs/lib/anime.iife.min.js"></script>
+  <script>
+    const { animate, utils } = anime;
+    // Create particles (stars) for the background
+    const numParticles = 50;
+    const particles = [];
+    for (let i = 0; i < numParticles; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = `${Math.random() * 100}vw`;
+      particle.style.top = `${Math.random() * 100}vh`;
+      document.body.appendChild(particle);
+      particles.push(particle);
+    }
+
+    // Animate particles
+    particles.forEach(particle => {
+      animate(particles, {
+        opacity: [0.2, 0.8],
+        scale: [0.5, 1.2],
+        translateX: () => utils.random(-20, 20),
+        translateY: () => utils.random(-20, 20),
+        duration: utils.random(3000, 6000),
+        easing: 'easeInOutSine',
+        loop: true,
+        direction: 'alternate'
+      });
+    });
+
+    // Create an anime.js timeline for sequencing lyric animations
+    const tl = anime.createTimeline({
+      easing: 'easeInOutQuad',
+      duration: 1500
+    });
+
+    // Animation settings
+    const displayDuration = 6000; // Time each lyric stays visible (ms)
+    const overlap = 500; // Overlap for smooth transitions (ms)
+
+    // Helper function to animate a lyric line
+    function animateLyric(lineId, startTime) {
+      const lyric = document.querySelector(`#${lineId}`);
+      const letters = `#${lineId} span`;
+      if (!lyric || !document.querySelector(letters)) {
+        console.error(`Lyric #${lineId} or its spans not found`);
+        return;
+      }
+
+      // Set initial state
+      animate(lyric, { opacity: 0, visibility: 'hidden', zIndex: 0, duration: 0 });
+
+      tl.add(letters, {
+        keyframes: [
+          {
+            opacity: 0,
+            scale: 0.8,
+            translateY: 50,
+            rotate: 5,
+            textShadow: '0 0 10px rgba(255, 255, 255, 0.5)'
+          },
+          {
+            opacity: 1,
+            scale: 1,
+            translateY: 0,
+            rotate: 0,
+            textShadow: '0 0 20px rgba(255, 255, 255, 0.8)'
+          }
+        ],
+        duration: 1500,
+        delay: anime.stagger(50),
+        begin: () => {
+          lyric.style.visibility = 'visible';
+          lyric.style.zIndex = 10;
+          lyric.classList.add('visible');
+          console.log(`Animating ${lineId}`);
+        }
+      }, startTime);
+      tl.add(letters, {
+        keyframes: [
+          {
+            opacity: 1,
+            scale: 1,
+            translateY: 0,
+            rotate: 0,
+            textShadow: '0 0 20px rgba(255, 255, 255, 0.8)'
+          },
+          {
+            opacity: 0,
+            scale: 1.1,
+            translateY: -50,
+            rotate: -5,
+            textShadow: '0 0 10px rgba(255, 255, 255, 0.5)'
+          }
+        ],
+        duration: 1500,
+        delay: anime.stagger(50),
+        complete: () => {
+          lyric.style.visibility = 'hidden';
+          lyric.style.zIndex = 0;
+          lyric.classList.remove('visible');
+        }
+      }, startTime + displayDuration);
+    }
+
+    // Animation sequence for lyrics
+    animateLyric('line1', 0); // 0s - 7.5s
+    animateLyric('line2', 7000 - overlap); // 7s - 14.5s
+    animateLyric('line3', 14000 - overlap); // 14s - 21.5s
+    animateLyric('line4', 21000 - overlap); // 21s - 28.5s
+    animateLyric('line5', 28000 - overlap); // 28s - 35.5s
+    animateLyric('line6', 35000 - overlap); // 35s - 42.5s
+
+    // Dynamic background gradient animation
+    animate('body', {
+      background: [
+        'linear-gradient(45deg, #1e3c72, #2a5298)',
+        'linear-gradient(135deg, #2a5298, #3b5998)',
+        'linear-gradient(225deg, #3b5998, #1e3c72)'
+      ],
+      duration: 60000,
+      easing: 'linear',
+      loop: true,
+      direction: 'alternate'
+    });
+
+    // Extend timeline to 60 seconds
+    tl.add({
+      targets: '.container',
+      opacity: 1,
+      duration: 60000
+    }, 0);
+  </script>
+</body>
+</html>

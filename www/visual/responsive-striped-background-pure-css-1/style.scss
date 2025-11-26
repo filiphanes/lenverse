@@ -1,0 +1,40 @@
+$n: 20; // density
+
+html, body{
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+}
+
+.pie{
+	width: 500%;
+	height: 500%; 
+	position: relative;
+	overflow: hidden;
+	top: -200%;
+	left: -200%;
+	animation: rot 111s linear infinite;
+}
+
+.pie p{
+	width: 50%;
+	height: 50%;
+	position: absolute;
+	background: #ff9500;
+	transform-origin: right bottom;
+	&:nth-child(2n){
+		background: #ffb127;
+	}
+}
+
+@for $i from 1 through $n{
+			.p#{$i}{
+				transform: rotate(#{$i * 360/$n}deg) skew(#{90 - 360/$n}deg) 
+			}
+}
+
+@keyframes rot{
+	to{
+		transform: rotate(360deg);
+	}
+}

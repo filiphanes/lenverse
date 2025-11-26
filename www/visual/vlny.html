@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Colorful Waves</title>
+  <style>body { margin: 0; overflow: hidden; }</style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script>
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Create a plane for the waves
+    const geometry = new THREE.PlaneGeometry(100, 100, 64, 64); // Wide plane with enough segments for smooth waves
+
+    // Custom shader material for colorful waves
+    const vertexShader = `
+      uniform float time;
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        vec3 pos = position;
+        // Wave effect: displace z based on x, y, and time
+        pos.z += sin(pos.x * 0.1 + time) * cos(pos.y * 0.1 + time) * 5.0;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      varying vec2 vUv;
+      uniform float time;
+      void main() {
+        // Create flowing colors based on UVs and time
+        float r = sin(vUv.x * 3.0 + time) * 0.5 + 0.5;
+        float g = cos(vUv.y * 3.0 + time * 0.7) * 0.5 + 0.5;
+        float b = sin(vUv.x * vUv.y * 5.0 + time * 0.5) * 0.5 + 0.5;
+        gl_FragColor = vec4(r, g, b, 1.0);
+      }
+    `;
+
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0.0 }
+      },
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      side: THREE.DoubleSide // Render both sides of the plane
+    });
+
+    const waves = new THREE.Mesh(geometry, material);
+    scene.add(waves);
+
+    // Position and rotate the plane for a nice angle
+    waves.rotation.x = -Math.PI / 4; // Tilt it slightly
+    camera.position.set(0, 50, 50);
+    camera.lookAt(0, 0, 0);
+
+    // Animation loop
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.02; // Speed of animation
+      waves.material.uniforms.time.value = time; // Update time for shaders
+      waves.rotation.z += 0.001; // Gentle rotation for extra flow
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

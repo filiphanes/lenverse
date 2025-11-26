@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Animation</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas to full HD resolution
+        canvas.width = 1920;
+        canvas.height = 1080;
+
+        // Scale canvas to fit window
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+
+        let x = 0;
+        let y = 0;
+        let last = 0;
+        let px = 7;
+        let gap = 1;
+
+        function drawPixel(ts) {
+            //if (ts - last < 30) return;
+            // Clear previous frame
+            ctx.fillStyle = 'black';
+            ctx.fillRect(x, y, px, px);
+
+            // Move to next pixel
+            x = x + px + gap;
+            if (x >= canvas.width) {
+                x = 0;
+                y = y + px + gap;
+                if (y >= canvas.height) {
+                    y = 0;
+                }
+            }
+
+            ctx.fillStyle = 'white';
+            ctx.fillRect(x, y, px, px);
+            requestAnimationFrame(drawPixel);
+        }
+
+        requestAnimationFrame(drawPixel);
+    </script>
+</body>
+</html>

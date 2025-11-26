@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rundown</title>
+	<link rel="stylesheet" href="rundown.css" />
+</head>
+<body>
+  <div class="controls">
+      <button onclick="addCue()" title="Add cue (A)">+</button>
+      <button onclick="playActive()" title="Play (Space)">▶</button>
+      <button onclick="pauseActive()" title="Pause (Space)">⏸</button>
+      <button onclick="stopAll()" title="Stop all (Esc)">⏹</button>
+      <button onclick="up()" title="Prev (←)">←</button>
+      <button onclick="down()" title="Next (→)">→</button>
+  </div>
+
+  <div id="main"></div>
+
+	<script src="/hyperactiv.js"></script>
+	<script src="/script.js"></script>
+  <script>
+    const {observe, computed, dispose, batch} = hyperactiv;
+    const cuesData = {
+      "type":"rundown",
+      "name":"SGT BA 25",
+      "cues": [
+        {"type":"memo","name":"zvukovka Rockstanders","start":"9h","duration":"45m"},
+        {"type":"memo","name":"zvukovka Geboorah","start":"9h45m","duration":"15m"},
+        {"type":"memo","name":"zvukovka Frendi","start":"10h","duration":"45m"},
+        {"type":"memo","name":"Kapely sa pripravujú počas 20minútovky\nPotom majú cca 10-15min na skúšku zvuku von."},
+        {"type":"memo","name":"Rockstanders","start":"9h"},
+        {"type":"group","mode":"random","name":"Prvá pieseň","start":"9h", cues: [
+          {"type":"text","content":"Prvý riadok\ndruhý riadok","duration":"5s","continue":"follow"},
+          {"type":"text","content":"dva","duration":"5s","continue":"follow"},
+          {"type":"text","content":"treti text","duration":"5s"},
+        ]},
+        {"type":"song","target":"01 Kazne sync/12.1. Zbynek kazen.txt","start":"11h","duration":"1h30m"},
+        {"type":"memo","name":"Frendi","start":"11h","duration":"1h30m"},
+        {"type":"memo","name":"Talkshow 20 minútovka","start":"12h30m","duration":"45m"},
+        {"type":"memo","name":"Geboorah","start":"13h30m","duration":"45m"},
+        {"type":"memo","name":"Talkshow 20 minútovka","start":"14h30m","duration":"45m"},
+        {"type":"memo","name":"Rockstanders","start":"15h15m","duration":"45m"},
+        {"type":"memo","name":"Divadielko: Knihy nie sú na jedenie","start":"16h","duration":"30m"},
+        {"type":"memo","name":"Rockstanders","start":"16h30m","duration":"60m"},
+        {"type":"memo","name":"Talkshow 20 minútovka","start":"17h30m","duration":"45m"},
+        {"type":"memo","name":"Geboorah","start":"20h","duration":"45m"},
+        {"type":"song","target":"GEBOORAH/Dnes.txt"},
+        {"type":"text","code":"A.1","name":"styri"},
+      ]
+    };
+
+    let displayColumns = ["icon","code","startTime","name","duration"];
+
+
+    class Cue {
+
+      constructor(data) {
+        this.name = data.name;
+        this.continue = data.continue;
+        this.startTime = parseTime(data.start)
+        this.duration = parseTime(data.duration)
+        this.parent = data.parent
+        const _this = observe(this, {bind: true, ignore: ['el','ol']})
+        return _this
+      }
+
+      constructElement() {
+        if (this.el) return this.el;
+        this.el = document.createElement('li');
+        this.el.classList.add(this.type)
+        this.el.addEventListener('click', (e) => {
+          if (!e.metaKey && !e.ctrlKey)  {
+            for (const cue of selectedCues) cue.unselect()
+          }
+          this.select()
+          // Dont select parent group
+          e.stopPropagation();
+        })
+        this.cols = {}
+        for (const name of displayColumns) {
+          this.appendColumn(name)
+        }
+        computed(() => {
+          if (this.selected) {
+            this.el.classList.add('selected')
+            this.el.scrollIntoView({behavior:"smooth", block:"nearest", inline:"nearest"})
+          } else {
+            this.el.classList.remove('selected')
+          }
+        })
+        computed(() => {
+          this.folded
+            ? this.el.classList.add('folded')
+            : this.el.classList.remove('folded')
+        })
+        computed(() => {
+          this.loaded
+            ? this.el.classList.add('loaded')
+            : this.el.classList.remove('loaded')
+        })
+        // this.state changed
+        computed(() => {
+          if (this.state == 'playing') {
+            this.el.classList.remove('paused')
+            this.el.classList.add('playing')
+            if (!this.interval) this.interval = setInterval(()=>this.updateElement(), 250)
+          } else if (this.state == 'paused') {
+            this.el.classList.add('paused')
+            this.el.classList.remove('playing')
+          } else {
+            this.el.classList.remove('paused')
+            this.el.classList.remove('playing')
+            this.cols.duration.textContent = this.format('duration')
+            this.cols.duration.style['background-position-x'] = '100%'
+            clearInterval(this.interval)
+            this.interval = undefined
+          }
+          this.updateElement()
+        })
+        return this.el
+      }
+
+      appendColumn(name) {
+        const el = document.createElement('span');
+        this.cols[name] = el
+        el.classList.add(name)
+        computed(() => el.innerHTML = this.format(name))
+        el.addEventListener('dblclick', (e) => {
+          console.log('dblclick', e)
+          el.setAttribute("contenteditable", "true") // "plaintext-only"
+          const range = document.createRange()
+          range.selectNodeContents(el)
+          const sel = window.getSelection()
+          sel.removeAllRanges()
+          sel.addRange(range)
+        })
+        el.addEventListener('blur', (e) => {
+          e.target.removeAttribute('contenteditable')
+          this[name] = parse(name, el.innerHTML)
+        })
+        this.el.appendChild(el)
+      }
+
+      updateElement() {
+        if (this.state === 'playing') {
+          this.cols.duration.textContent = this.format('currentTime')
+          const progress = this.currentProgress
+          this.cols.duration.style['background-position-x'] = (1-progress)*100+'%'
+          if (progress >= 1) {
+            this.end()
+          }
+        }
+      }
+
+      format(name) {
+        if (name === 'name')
+          return this.name  || this.content || this.target || this.type;
+        else if (name === 'startTime')
+          return formatTime(this.startTime);
+        else if (name === 'duration')
+          return formatTime(this.duration);
+        else if (name === 'currentTime')
+          return formatTime(this.currentTime);
+        return this[name] || "";
+      }
+
+      parse(name, value) {
+        if (name === 'startTime' || name === 'duration' || name === 'currentTime')
+          return parseTime(value);
+        return this[name];
+      }
+
+      select() {
+        this.selected = true
+        selectedCues.push(this)
+        if (this.parent && this.parent.folded) this.parent.unfold()
+      }
+
+      unselect() {
+        this.selected = false
+        // remove from selectedCues
+        const index = selectedCues.indexOf(this)
+        if (index >= 0) selectedCues.splice(index, 1)
+      }
+
+      nextSeq() {
+        /* TODO: */
+        this.down()
+      }
+
+      /* Returns cue after this in parent cues or after parent*/
+      next() {
+        return this.parent.next(this)
+      }
+
+      /* Returns cue before this in parent cues or before parent */
+      prev() {
+        return this.parent.prev(this)
+      }
+
+      down() {
+        const next = this.next()
+        if (next) {
+          this.unselect()
+          next.select()
+        }
+      }
+
+      up() {
+        const prev = this.prev()
+        if (prev) {
+          this.unselect()
+          prev.select()
+        }
+      }
+
+      left() {
+        if (this.parent && !(this.parent instanceof Rundown)) {
+          this.unselect()
+          this.parent.select()
+        }
+      }
+      right() {}
+      fold() {}
+      unfold() {}
+
+      go() {
+        this.start()
+        this.nextSeq()
+      }
+
+      start() {
+        if (this.state !== 'playing') {
+          this.load()
+          if (activeCues.indexOf(this) < 0) {
+            activeCues.push(this)
+          }
+          this.realStart = Date.now() / 1000
+          this.play()
+        }
+      }
+
+      play() {
+        this.state = 'playing'
+        this.realStart = Date.now()/1000 - this.currentTime
+      }
+
+      get currentTime() {
+        return Date.now()/1000 - this.realStart;
+      }
+
+      get currentProgress() {
+        return this.currentTime / (this.duration || Infinity);
+      }
+
+      pause() {
+        console.log('pause', this.format('name'))
+        this.state = 'paused'
+      }
+
+      stop() {
+        console.log('stop', this.format('name'))
+        this.state = null
+        // remove from activeCues
+        activeCues.splice(activeCues.indexOf(this), 1)
+      }
+
+      end() {
+        this.stop()
+        if (this.continue === 'follow' && this.next) {
+          this.next.start()
+        }
+      }
+
+      load() {
+        this.loaded = true
+      }
+
+      seek(seconds) {
+        if (seconds > this.duration) seconds = duration;
+        else if (seconds < 0) seconds = 0;
+        this.realStart += seconds - this.currentTime;
+      }
+
+      keydown(e) {
+        const key = e.key.toLowerCase()
+        if (key === ' ') this.go()
+        else if (key === 'arrowup') this.up()
+        else if (key === 'arrowdown') this.down()
+        else if (key === 'arrowright') this.right()
+        else if (key === 'arrowleft') this.left()
+        e.preventDefault()
+      }
+    }
+
+
+    class GroupCue extends Cue {
+      type = 'group'
+
+      constructor(data) {
+        super(data);
+        this.mode = data.mode;
+        this.cues = (data.cues||[]).map((d)=>this.childCueFromData(d))
+      }
+
+      childCueFromData(data) {
+        const cueType = cueTypes[data.type]; 
+        if (cueType === undefined) {
+          console.log('Unknown cue type', data.type)
+          return null
+        }
+        const cue = new cueType(data)
+        cue.parent = this
+        return cue
+      }
+
+      constructElement() {
+        if (this.el) return this.el;
+        super.constructElement();
+        this.el.classList.add('group', this.mode)
+        this.ol = document.createElement('ol')
+        this.el.appendChild(this.ol)
+        computed(() => {
+          // clear children
+          this.ol.innerHTML = '';
+          // again add child elements
+          for (const cue of this.cues) {
+            this.ol.appendChild(cue.constructElement())
+          }
+        })
+        return this.el;
+      }
+
+      go() {
+        this.start()
+        if (this.mode === 'firstenter' && this.folded) {
+          this.unfold()
+        }
+        super.down()
+      }
+
+      start() {
+        if (this.mode === 'firstenter') {
+          this.cues[0].start()
+          // TODO: select next sequence after first element
+        } else if (this.mode === 'first') {
+          this.cues[0].start()
+          // TODO: select next sequence after group
+        } else if (this.mode === 'playlist') {
+          this.cues[0].start()
+          // TODO: play sequentially
+          // TODO: select next sequence after group
+        } else if (this.mode === 'random') {
+          if (this.cues.length > 0) {
+            const i = Math.floor(Math.random() * this.cues.length)
+            this.cues[i].start()
+          }
+          // TODO: select next sequence after group
+        } else {
+          // (this.mode === 'timeline') {
+          for (const cue of this.cues) cue.start()
+        }
+      }
+
+      select(last=false) {
+        if (last && !this.folded && this.cues.length > 0) {
+          this.cues[this.cues.length-1].select(last)
+        } else {
+          super.select(last)
+        }
+      }
+
+      prev(child) {
+        if (child === undefined || this.cues.length === 0) return super.prev();
+        const index = this.cues.indexOf(child)
+        /* Return last from this group */
+        if (index < 0 && this.cues.length > 0) {
+          return this.cues[this.cues.length-1].prev(child)
+        }
+        if (index < 1) return this;
+        return this.cues[index-1].prev(child)
+      }
+
+      next(child) {
+        if (child === undefined || this.cues.length === 0) return super.next();
+        const index = this.cues.indexOf(child)
+        if (index+1 === this.cues.length) return super.next();
+        return this.cues[index+1] // may be first if child not found
+      }
+
+      fold() {
+        this.folded = true
+      }
+
+      unfold() {
+        this.folded = false
+      }
+
+      down() {
+        if (this.folded) {
+          super.down()
+        } else if (this.cues[0]) {
+          this.unselect()
+          this.cues[0].select()
+        }
+      }
+
+      left() {
+        if (this.folded && this.parent) {
+          this.unselect()
+          this.parent.select()
+          return
+        }
+        this.fold()
+      }
+
+      right() {
+        this.unfold()
+      }
+
+    }
+
+
+    class Rundown extends GroupCue {
+      type = 'rundown'
+
+      constructElement() {
+        if (this.el) return this.el;
+        this.ol = document.createElement('ol')
+        this.el = this.ol;
+        // update children from this.cues
+        computed(() => {
+          // clear children
+          this.ol.innerHTML = `
+          <li class="header">
+            <span class="icon"></span>
+            <span class="code">Code</span>
+            <span class="startTime">Start</span>
+            <span class="name">Name</span>
+            <span class="duration">Duration</span>
+          </li>`;
+          // again add elements
+          for (const cue of this.cues) {
+            this.ol.appendChild(cue.constructElement())
+          }
+        })
+        console.log('rundown element created', this.el);
+        return this.el;
+      }
+    }
+
+
+    class BibleGroupCue extends GroupCue {
+      type = 'bible'
+
+      constructor(data) {
+        super(data);
+        this.content = data.content;
+        this.mode = 'firstenter'
+      }
+    }
+
+
+    class SongCue extends GroupCue {
+      type = 'song'
+
+      constructor(data) {
+        super(data)
+        this.mode = 'firstenter'
+        this.target = data.target
+        this.load()
+      }
+
+      async load() {
+        const verses = await parseSong(this.target)
+        this.cues = verses.map((content) => new HttpCue({
+          method: 'PUT',
+          url: '/var/verse.txt',
+          content: content,
+          parent: this,
+        }))
+      }
+    }
+
+
+    class MemoCue extends Cue {
+      type = 'memo'
+    }
+
+
+    class WaitCue extends Cue {
+      type = 'wait'
+    }
+
+
+    class HttpCue extends Cue {
+      type = 'http'
+      constructor(cue) {
+        console.log(cue)
+        super(cue);
+        this.method = cue.method;
+        this.url = cue.url;
+        this.content = cue.content
+      }
+      play(){
+        fetch(this.url, {method: this.method, body: this.content})
+      }
+    }
+
+
+    class TextCue extends Cue {
+      type = 'text'
+      constructor(cue) {
+        super(cue);
+        this.target = cue.target || '/var/verse.txt'
+        this.content = cue.content
+      }
+      play(){
+        super.play()
+        PUT(this.target, this.content)
+      }
+      pause(){
+        super.pause()
+        PUT(this.target, '')
+      }
+      stop(){
+        super.stop()
+        PUT(this.target, '')
+      }
+    }
+
+
+    class AudioCue extends Cue {
+      type = 'audio'
+      constructor(data) {
+        super(data);
+        this.target = data.target;
+      }
+      play(){
+        super.play()
+        PUT('/var/audio.txt', this.target)
+      }
+      pause(){
+        super.pause()
+        PUT('/var/audio.txt', '')
+      }
+      stop(){
+        super.stop()
+        PUT('/var/audio.txt', '')
+      }
+    }
+
+
+    class ImageCue extends Cue {
+      type = 'image'
+      constructor(data) {
+        super(data);
+        this.target = data.target;
+      }
+      play(){
+        super.play()
+        PUT('/var/image.txt', this.target)
+      }
+      pause(){
+        super.pause()
+        PUT('/var/image.txt', '')
+      }
+      stop(){
+        super.stop()
+        PUT('/var/image.txt', '')
+      }
+    }
+
+
+    class VideoCue extends Cue {
+      type = 'video'
+      constructor(data) {
+        super(data);
+        this.target = data.target;
+      }
+      play(){
+        super.play()
+        PUT('/var/video.txt', this.target)
+      }
+      pause(){
+        super.pause()
+        PUT('/var/video.txt', '')
+      }
+      stop(){
+        super.stop()
+        PUT('/var/video.txt', '')
+      }
+    }
+
+
+    const cueTypes = {
+        "group": GroupCue,
+        "audio": AudioCue,
+        "video": VideoCue,
+        "image": ImageCue,
+        "bible": BibleGroupCue,
+        "song": SongCue,
+        "memo": MemoCue,
+        "http": HttpCue,
+        "text": TextCue,
+        "wait": WaitCue,
+    };
+
+    const rundown = new Rundown(cuesData)
+    main.appendChild(rundown.constructElement())
+
+    function updateButtonStates() {
+      playBtn.classList.toggle('active', isPlaying);
+      pauseBtn.classList.toggle('active', !isPlaying && currentCueIndex >= 0);
+    }
+
+    function playSelected() {
+      isPlaying = true;
+      if (currentCueIndex < 0) currentCueIndex = 0;
+      console.log('Playing cue', currentCueIndex + 1);
+      updateButtonStates();
+      // Add logic to trigger cue (e.g., OSC command)
+    }
+
+    function pauseSelected() {
+      isPlaying = false;
+      console.log('Paused');
+      updateButtonStates();
+      // Add logic to pause cue execution
+    }
+
+    function stopSelected() {
+      isPlaying = false;
+      currentCueIndex = -1;
+      console.log('Stopped');
+      updateButtonStates();
+      // Add logic to reset rundown
+    }
+
+    function down() {
+      selectedCues[selectedCues.length-1].down()
+    }
+
+    function up() {
+      selectedCues[selectedCues.length-1].up()
+    }
+
+    function addCue() {
+      const type = prompt('Cue type (audio/video/dmx/text):') || 'text';
+      const name = prompt('Cue name:') || 'New Cue';
+      rundown.cues.push(rundown.childCueFromData({ type, name }))
+    }
+
+    function span(clas, html) {
+      const el = document.createElement('span')
+      if (clas) el.className = clas
+      if (html) el.innerHTML = html
+      return el
+    }
+
+    function parseTime(str) {
+      if (!str || typeof str !== 'string') return null;
+      const match = str.replace(/\s/g,'').match(/(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+      if (!match) return null;
+      const d = +(match[1] || 0);
+      const h = +(match[2] || 0);
+      const m = +(match[3] || 0);
+      const s = +(match[4] || 0);
+      return (d * 24 * 3600) + (h * 3600) + (m * 60) + s;
+    }
+
+    function formatTime(s) {
+      if (typeof s !== 'number') return "";
+      let result = s < 0 ? "-" : "";
+      const d = Math.floor(s / (24 * 3600));
+      s %= 24 * 3600;
+      const h = Math.floor(s / 3600);
+      s %= 3600;
+      const m = Math.floor(s / 60);
+      s = Math.round(s % 60);
+      if (d > 0) result += `${d}d`;
+      if (h > 0) result += `${h}h`;
+      if (m > 0) result += `${m}m`;
+      if (s > 0) result += `${s}s`;
+      if (!result) result = '0s';
+      return result;
+    }
+
+    function playActive() {
+      for (const cue of activeCues) cue.play()
+    }
+
+    function pauseActive() {
+      for (const cue of activeCues) cue.pause()
+    }
+
+    function stopAll() {
+      for (const cue of activeCues) cue.stop()
+    }
+
+    let isPlaying = false;
+    const activeCues = [];
+    const selectedCues = [];
+    const rundowns = [new Rundown(cuesData)];
+    const activeRundown = rundowns[0];
+
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase()
+      if (e.target.tagName === 'TEXTAREA') return;
+      if (e.target.hasAttribute('contenteditable')) {
+        if (key === 'enter') {
+          e.target.blur()
+          e.preventDefault()
+        }
+        return
+      }
+
+      if (key === 'escape') stopAll()
+      else if (key === 'a') addCue()
+      for (const cue of selectedCues) {
+        cue.keydown(e)
+      }
+    })
+
+  </script>
+</body>
+</html>
