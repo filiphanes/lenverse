@@ -1,8 +1,14 @@
 cd server; bash build.sh; cd ..
 #exit
-#cd apps/resolume; bash build.sh; cd ../..
+#cd others/resolume; bash build.sh; cd ../..
 
 zip -r lenverse-$(date "+%Y-%m-%d").zip \
-    bin/ \
-    www/ \
+    server/ \
+    modules/ \
+    var/ \
+    visual/ \
+    bibles/ \
+    songs/ \
+    media/ \
+    others/ \
     README.md \

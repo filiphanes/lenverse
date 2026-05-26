@@ -1,0 +1,204 @@
+-- signaling.lua for MakoServer
+-- Run with mako -l::signaling.lua -p 3700 or similar, adjust if needed
+
+local json = require("json")
+
+local rooms = {}
+
+local mutex = ba.mutex()
+
+local function broadcast(roomName, msg, excludeId)
+  mutex:lock()
+  local room = rooms[roomName]
+  if room then
+    local encoded = json.encode(msg)
+    for id, client in pairs(room) do
+      if id ~= excludeId then
+        client.ws:send_frame(encoded, true)
+      end
+    end
+  end
+  mutex:unlock()
+end
+
+local function removePeer(roomName, id)
+  mutex:lock()
+  local room = rooms[roomName]
+  if room then
+    room[id] = nil
+    if next(room) == nil then
+      rooms[roomName] = nil
+    end
+  end
+  mutex:unlock()
+  broadcast(roomName, {type = 'peer-left', id = id}, id)
+end
+
+-- Function to send WebSocket frame
+local function send_frame(sock, data, isTxt)
+  local opcode = isTxt and 1 or 2
+  local len = #data
+  local head = string.char(0x80 + opcode)
+  if len < 126 then
+    head = head .. string.char(len)
+  elseif len < 65536 then
+    head = head .. string.char(126) .. string.char(math.floor(len / 256)) .. string.char(len % 256)
+  else
+    -- Not handling large payloads
+    return
+  end
+  sock:write(head .. data)
+end
+
+-- Function to read WebSocket frame
+local function read_frame(sock)
+  local byte1 = sock:read(1)
+  if not byte1 then return nil end
+  local fin = byte1:byte() & 0x80 ~= 0
+  local opcode = byte1:byte() & 0x0F
+  local byte2 = sock:read(1)
+  if not byte2 then return nil end
+  local masked = byte2:byte() & 0x80 ~= 0
+  local payload_len = byte2:byte() & 0x7F
+  if payload_len == 126 then
+    local len_str = sock:read(2)
+    if not len_str then return nil end
+    payload_len = len_str:byte(1) * 256 + len_str:byte(2)
+  elseif payload_len == 127 then
+    -- Not handling 64-bit lengths
+    return nil
+  end
+  local mask = masked and sock:read(4) or nil
+  if masked and not mask then return nil end
+  local payload = sock:read(payload_len)
+  if not payload then return nil end
+  if mask then
+    local decoded = {}
+    for i = 1, payload_len do
+      local j = ((i-1) % 4) + 1
+      decoded[i] = string.char(payload:byte(i) ~ mask:byte(j))
+    end
+    payload = table.concat(decoded)
+  end
+  if opcode == 1 then -- text
+    return payload, true
+  elseif opcode == 2 then -- binary
+    return payload, false
+  elseif opcode == 8 then -- close
+    return nil
+  elseif opcode == 9 then -- ping
+    send_frame(sock, payload or "", false) -- pong with same payload
+    return read_frame(sock)
+  elseif opcode == 10 then -- pong
+    return read_frame(sock)
+  else
+    return nil
+  end
+end
+
+-- Main server loop
+local sock = ba.socket.tcp()
+if not sock:bind("*", 3700) then
+  trace("Cannot bind to port 3700")
+  return
+end
+sock:listen()
+trace("Signaling server listening on port 3700")
+
+while true do
+  local client = sock:accept()
+  if client then
+    ba.thread.run(function()
+      local success, err = pcall(function()
+        -- Read HTTP headers for handshake
+        local line = client:readline()
+        if not line or not line:match("^GET") then
+          client:close()
+          return
+        end
+        local headers = {}
+        while true do
+          local l = client:readline()
+          if not l then break end
+          if l == "" or l == "\r" then break end
+          local k, v = l:match("^(.-):%s*(.*)$")
+          if k then headers[k:lower()] = v end
+        end
+        if not headers["sec-websocket-key"] then
+          client:write("HTTP/1.1 400 Bad Request\r\n\r\n")
+          client:close()
+          return
+        end
+        local key = headers["sec-websocket-key"]
+        local guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+        local sha1 = ba.crypto.hash("sha1", key .. guid)
+        local accept = ba.base64.encode(sha1)
+        client:write("HTTP/1.1 101 Switching Protocols\r\n")
+        client:write("Upgrade: websocket\r\n")
+        client:write("Connection: Upgrade\r\n")
+        client:write("Sec-WebSocket-Accept: " .. accept .. "\r\n\r\n")
+
+        -- Now handle signaling
+        local data, isTxt = read_frame(client)
+        if not data then
+          client:close()
+          return
+        end
+        local msg = json.decode(data)
+        if msg.type ~= 'join' then
+          client:close()
+          return
+        end
+        local roomName = msg.room
+        local clientId = msg.id
+        local clientName = msg.name
+
+        mutex:lock()
+        if not rooms[roomName] then
+          rooms[roomName] = {}
+        end
+        rooms[roomName][clientId] = {ws = client, name = clientName}
+        mutex:unlock()
+
+        -- Send joined
+        local peers = {}
+        mutex:lock()
+        for id, clientInfo in pairs(rooms[roomName]) do
+          if id ~= clientId then
+            table.insert(peers, {id = id, name = clientInfo.name})
+          end
+        end
+        mutex:unlock()
+        send_frame(client, json.encode({type = 'joined', peers = peers}), true)
+
+        -- Broadcast new-peer
+        broadcast(roomName, {type = 'new-peer', id = clientId, name = clientName}, clientId)
+
+        -- Message loop
+        while true do
+          local data, isTxt = read_frame(client)
+          if not data then
+            break
+          end
+          local msg = json.decode(data)
+          local type_ = msg.type
+          if type_ == 'offer' or type_ == 'answer' or type_ == 'candidate' then
+            local toId = msg.toId
+            mutex:lock()
+            local target = rooms[roomName][toId]
+            mutex:unlock()
+            if target then
+              msg.fromId = clientId
+              send_frame(target.ws, json.encode(msg), true)
+            end
+          end
+        end
+      end)
+      if not success then
+        trace("Error:", err)
+      end
+      removePeer(roomName, clientId)
+      client:close()
+    end)
+  end
+end

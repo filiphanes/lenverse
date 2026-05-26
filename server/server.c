@@ -8,7 +8,7 @@
 #include <pthread.h>
 #include <limits.h>
 
-static const char *base_dir = "www";
+static const char *base_dir = ".";
 
 // ------------------------------------------------------------------
 // Subscription management

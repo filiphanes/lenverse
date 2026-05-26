@@ -1,0 +1,14 @@
+:root { color-scheme: light dark; --fg:#222; --bg:#fafafa; --muted:#888; --accent:#3a7bd5; }
+@media (prefers-color-scheme: dark) { :root { --fg:#eee; --bg:#111; --muted:#888; } }
+* { box-sizing: border-box; }
+body { font: 16px/1.4 system-ui, sans-serif; margin: 0; color: var(--fg); background: var(--bg); }
+header { padding: 1.5rem 2rem; border-bottom: 1px solid #8884; }
+header h1 { margin: 0; font-weight: 600; }
+main { padding: 1.5rem 2rem; }
+ul.modules { list-style: none; padding: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+ul.modules li { border: 1px solid #8884; border-radius: 8px; padding: 1rem; }
+ul.modules h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
+ul.modules p { margin: 0 0 .75rem; color: var(--muted); }
+ul.modules nav a { margin-right: .75rem; color: var(--accent); text-decoration: none; }
+ul.modules nav a:hover { text-decoration: underline; }
+body.connected::after { content: ""; }

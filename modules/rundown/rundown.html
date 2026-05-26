@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rundown</title>
+	<link rel="stylesheet" href="rundown.css" />
+	<script src="script.js"></script>
+</head>
+<body>
+  <div class="controls">
+      <button onclick="addCue()" title="Add cue (A)">+</button>
+      <button onclick="playSelected()" title="Play (Space)">▶</button>
+      <button onclick="pauseSelected()" title="Pause (Space)">⏸</button>
+      <button onclick="selectStop()" title="Stop all (Esc)">⏹</button>
+      <button onclick="selectPrev()" title="Prev (←)">←</button>
+      <button onclick="selectNext()" title="Next (→)">→</button>
+  </div>
+
+  <div id="main"></div>
+
+  <script>
+    const cuesData = {
+      "type":"rundown",
+      "name":"SGT BA 25",
+      "cues": [
+        {"type":"memo","name":"zvukovka Rockstanders","start":"9h","duration":"45m"},
+        {"type":"memo","name":"zvukovka Geboorah","start":"9h45m","duration":"15m"},
+        {"type":"memo","name":"zvukovka Frendi","start":"10h","duration":"45m"},
+        {"type":"memo","name":"Kapely sa pripravujú počas 20minútovky\nPotom majú cca 10-15min na skúšku zvuku von."},
+        {"type":"memo","name":"Rockstanders","start":"9h"},
+        {"type":"group","name":"Prvá pieseň","start":"9h", cues: [
+          {"type":"text","content":"Prvý riadok\ndruhý riadok","duration":"5s"},
+          {"type":"text","content":"dva","duration":"5s"},
+          {"type":"text","content":"treti text","duration":"5s"},
+        ]},
+        {"type":"song","src":"/songs/GEBOORAH/Otvorte brány.txt","start":"11h","duration":"1h30m"},
+        {"type":"memo","name":"Frendi","start":"11h","duration":"1h30m"},
+        {"type":"memo","name":"Talkshow 20 minútovka","start":"12h30m","duration":"45m"},
+        {"type":"memo","name":"Geboorah","start":"13h30m","duration":"45m"},
+        {"type":"memo","name":"Talkshow 20 minútovka","start":"14h30m","duration":"45m"},
+        {"type":"memo","name":"Rockstanders","start":"15h15m","duration":"45:00"},
+        {"type":"memo","name":"Divadielko: Knihy nie sú na jedenie","start":"16h","duration":"30m"},
+        {"type":"memo","name":"Rockstanders","start":"16h30m","duration":"60m"},
+        {"type":"memo","name":"Talkshow 20 minútovka","start":"17h30m","duration":"45m"},
+        {"type":"memo","name":"Geboorah","start":"20h","duration":"45m"},
+        {"type":"text","code":"A.1","name":"styri"},
+        {"type":"text","code":"r1","name":"refren"}
+      ]
+    };
+
+    let isPlaying = false;
+    let currentCueIndex = -1;
+
+
+    class Cue {
+      columns = ["icon","code","start","name","target","duration"];
+
+      constructor(cue) {
+        this.type = cue.type;
+        this.name = cue.name;
+        this.start = parseTime(cue.start);
+        this.duration = parseTime(cue.duration);
+      }
+
+      constructElement() {
+        const el = document.createElement('li');
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.select(true/*, if shift is down, add=True*/)
+        })
+        el.className = this.type.toLowerCase();
+        el.appendChild(span('icon'));
+        el.appendChild(span('code', this.code));
+        el.appendChild(span('start', this.start));
+        el.appendChild(span('name', this.name || this.content?.replace('\n','<br>')));
+        el.appendChild(span('target'));
+        el.appendChild(span('duration', this.duration));
+        this.el = el;
+      }
+
+      select(value, add) {
+        self.selected = value
+        if (!value) {
+          this.el.classList.remove('selected')
+        } else {
+          this.el.classList.add('selected')
+          if (!add) {
+            for (const cue of selectedCues) cue.select(false);
+              selectedCues.splice(0, Infinity, this)
+          }
+        }
+      }
+
+      play(){}
+      pause(){}
+      stop(){}
+      next(){
+        if (this.nextCue !== undefined) {
+          this.nextCue.select(True)
+        }
+      }
+      prev(){
+        if (this.prevCue !== undefined) {
+          this.prevCue.select(True)
+        }
+      }
+    }
+
+
+    class GroupCue extends Cue {
+      constructor(data) {
+        super(data);
+        this.cues = [];
+        let prevCue;
+        for (const d of data.cues) {
+          const newCue = this.addCueFromData(d)
+          if (prevCue !== undefined) prevCue.nextCue = newCue;
+          newCue.prevCue = prevCue;
+          prevCue = newCue;
+        }
+      }
+
+      constructElement() {
+        super.constructElement();
+        this.ol = document.createElement('ol')
+        this.el.appendChild(this.ol);
+        // Append child cues
+        for (const cue of this.cues) {
+          cue.constructElement()
+          this.ol.appendChild(cue.el);
+        }
+        this.el.appendChild(this.ol);
+      }
+
+      addCueFromData(data) {
+        if (cueTypes[data.type] !== undefined) {
+          const cue = new cueTypes[data.type](data)
+          this.cues.push(cue)
+          if (this.ol) {
+            this.ol.apendChild(cue.el)
+          }
+          return cue;
+        } else {
+          console.log('Unknown cue type', data.type)
+        }
+      }
+
+    }
+
+
+    class Rundown extends GroupCue {
+
+      constructElement() {
+        this.ol = document.createElement('ol')
+        this.el = this.ol;
+        this.ol.innerHTML = `
+        <li class="header">
+          <span class="icon"></span>
+          <span class="code">Code</span>
+          <span class="start">Start</span>
+          <span class="name">Name</span>
+          <span class="target">Target</span>
+          <span class="duration">Duration</span>
+        </li>`;
+        for (const cue of this.cues) {
+          cue.constructElement()
+          this.ol.appendChild(cue.el);
+        }
+      }
+    }
+
+
+    class TextCue extends Cue {
+      constructor(cue) {
+        super(cue);
+        this.content = cue.content;
+      }
+    }
+
+
+    class BibleCue extends Cue {
+      constructor(cue) {
+        super(cue);
+        this.content = cue.content;
+      }
+    }
+
+
+    class AudioCue extends Cue {
+        play(){}
+        pause(){}
+        stop(){}
+    }
+
+
+    class VideoCue extends Cue {
+        play(){}
+        pause(){}
+        stop(){}
+    }
+
+
+    class ImageCue extends Cue {
+        play(){}
+        pause(){}
+        stop(){}
+    }
+
+
+    class MemoCue extends Cue {
+    }
+
+
+    class SongCue extends Cue {
+        play(){}
+        pause(){}
+        stop(){}
+    }
+
+
+
+    const cueTypes = {
+        "group": GroupCue,
+        "audio": AudioCue,
+        "video": VideoCue,
+        "memo": MemoCue,
+        "text": TextCue,
+        "bible": BibleCue,
+        "image": ImageCue,
+        "song": SongCue,
+    };
+
+    const rundown = new Rundown(cuesData)
+    rundown.constructElement()
+    main.appendChild(rundown.el)
+    selectedCues = [];
+
+
+    function updateButtonStates() {
+      playBtn.classList.toggle('active', isPlaying);
+      pauseBtn.classList.toggle('active', !isPlaying && currentCueIndex >= 0);
+    }
+
+    function playSelected() {
+      isPlaying = true;
+      if (currentCueIndex < 0) currentCueIndex = 0;
+      console.log('Playing cue', currentCueIndex + 1);
+      updateButtonStates();
+      // Add logic to trigger cue (e.g., OSC command)
+    }
+
+    function pauseSelected() {
+      isPlaying = false;
+      console.log('Paused');
+      updateButtonStates();
+      // Add logic to pause cue execution
+    }
+
+    function stopSelected() {
+      isPlaying = false;
+      currentCueIndex = -1;
+      console.log('Stopped');
+      updateButtonStates();
+      // Add logic to reset rundown
+    }
+
+    function selectNext() {
+      selectedCues[0].next()
+    }
+
+    function selectPrev() {
+      selectedCues[0].prev()
+    }
+
+    function addCue() {
+      const type = prompt('Cue type (audio/video/dmx/text):') || 'text';
+      const name = prompt('Cue name:') || 'New Cue';
+      rundown.addCueFromData({
+        type,
+        name,
+      })
+    }
+
+    function span(clas, html) {
+      const el = document.createElement('span')
+      if (clas) el.className = clas
+      if (html) el.innerHTML = html
+      return el
+    }
+
+    function parseTime(str) {
+      if (!str || typeof str !== 'string') return null;
+      const match = str.replace(/\s/g,'').match(/(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+      if (!match) return null;
+      const d = +(match[1] || 0);
+      const h = +(match[2] || 0);
+      const m = +(match[3] || 0);
+      const s = +(match[4] || 0);
+      return (d * 24 * 3600) + (h * 3600) + (m * 60) + s;
+    }
+
+    function formatTime(s) {
+      if (!Number.isInteger(s) || s < 0) return "";
+      const d = Math.floor(s / (24 * 3600));
+      s %= 24 * 3600;
+      const h = Math.floor(s / 3600);
+      s %= 3600;
+      const m = Math.floor(s / 60);
+      s %= 60;
+      let result = "";
+      if (d > 0) result += `${d}d`;
+      if (h > 0) result += `${h}h`;
+      if (m > 0) result += `${m}m`;
+      if (s > 0) result += `${s}sek`;
+      return result;
+    }
+
+    function domToRundown(root) {
+      for (const li of root.children) {
+        const cue = {};
+        for (const cls of li.classList) {
+          if (cueTypes[cls] !== undefined) {
+            cue.type = cls;
+            break;
+          }
+        }
+        if (cue.type === undefined) continue;
+        for (const prop of ["code","name","target","start","duration"]) {
+          cue[prop] = li.querySelector("."+prop)?.textContent;
+        }
+        cues.push(cue);
+      }
+      return {rundown: {cues: cues}};
+    }
+
+    rundownObject = new Rundown(cuesData)
+
+    document.addEventListener('keydown', (e) => {
+      // Ignore shortcuts in textareas
+      if (e.target.tagName === 'TEXTAREA') return;
+      switch (e.key.toLowerCase()) {
+        case ' ': // Play/Pause
+          e.preventDefault();
+          if (isPlaying) {
+            pause();
+          } else {
+            play();
+          }
+          break;
+        case 'escape': // Stop
+          stopBtn.click();
+          break;
+        case 'arrowdown': // Next
+          selectNext();
+          break;
+        case 'arrowup': // Previous
+          selectPrev();
+          break;
+        case 'a': // Add Cue
+          addCue();
+          break;
+      }
+    })
+  </script>
+</body>
+</html>

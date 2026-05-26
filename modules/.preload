@@ -1,0 +1,231 @@
+-- LenVerse Mako app — module loader + file-as-state WebSocket protocol.
+--
+-- A "module" is any direct subfolder of this app dir that contains a
+-- manifest.json. Other subfolders (resolume/, midi/, openlp/, ...) are
+-- ignored by the registry but still statically served by Mako.
+--
+-- Exposed protocol:
+--   GET  /modules.json                -> registry of discovered modules
+--   GET  /<id>/data/<path>            -> read file (or plain-text dir listing)
+--   PUT  /<id>/data/<path>            -> overwrite + broadcast to WS peers
+--   WS   /ws/<id>/data/<path>         -> subscribe; server sends current
+--                                        contents on connect, then any change.
+--                                        WS writes overwrite the file and fan
+--                                        out to all peers (same protocol as
+--                                        server.go / server.c).
+-- Everything else falls through to Mako's static handler (dashboard, graphics,
+-- index.lsp, shared/, etc.).
+
+local json = ba.json
+
+local modules = {}             -- ordered list of manifests
+local moduleById = {}          -- id -> manifest
+local subs = {}                -- disk-path -> { sock, sock, ... }
+
+local appIo = io  -- IO interface scoped to this app's directory
+
+-- ---------------------------------------------------------------------------
+-- Discovery
+-- ---------------------------------------------------------------------------
+
+local function loadManifest(id)
+    local path = id.."/manifest.json"
+    local f = appIo:open(path, "r")
+    if not f then return nil end  -- not a module, skip silently
+    local raw = f:read"a"
+    f:close()
+    local ok, m = pcall(json.decode, raw)
+    if not ok then return nil, "manifest parse error: "..tostring(m) end
+    m.id = id
+    m.dashboard = m.dashboard or "dashboard/index.html"
+    m.graphics  = m.graphics  or "graphics/index.html"
+    return m
+end
+
+local function scanModules()
+    modules, moduleById = {}, {}
+    for name in appIo:files"." do
+        if name:sub(1,1) ~= "." then
+            local m, err = loadManifest(name)
+            if m then
+                modules[#modules+1] = m
+                moduleById[name] = m
+                trace("module loaded: "..name)
+                if appIo:stat(name.."/extension.lua") then
+                    local ef = appIo:open(name.."/extension.lua", "r")
+                    if ef then
+                        local chunk, lerr = load(ef:read"a", name.."/extension.lua")
+                        ef:close()
+                        if chunk then pcall(chunk) else trace("extension err: "..tostring(lerr)) end
+                    end
+                end
+            elseif err then
+                trace("module skipped ("..name.."): "..err)
+            end
+        end
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- WebSocket pub/sub
+-- ---------------------------------------------------------------------------
+
+local function broadcast(key, payload)
+    local list = subs[key]; if not list then return end
+    for i = #list, 1, -1 do
+        local s = list[i]
+        local ok = pcall(function() s:write(payload, true) end)
+        if not ok then table.remove(list, i) end
+    end
+end
+
+local function parseDataPath(url)
+    -- /<id>/data/<rel> -> (id, rel, diskPath)
+    local id, rel = url:match"^/([^/]+)/data/(.*)$"
+    if not id or not moduleById[id] then return nil end
+    if rel:find"%.%." then return nil end
+    return id, rel, id.."/data/"..rel
+end
+
+local function readFile(path)
+    local f = appIo:open(path, "r"); if not f then return nil end
+    local data = f:read"a"; f:close(); return data
+end
+
+local function writeFile(path, data)
+    local f = appIo:open(path, "w"); if not f then return nil end
+    f:write(data); f:close(); return true
+end
+
+-- ---------------------------------------------------------------------------
+-- HTTP / WS filter
+-- ---------------------------------------------------------------------------
+
+local function urldecode(s)
+    return (s:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))
+end
+
+local function readBody(request)
+    -- request:rawrdr() refuses to hand out raw bytes when Mako has already
+    -- parsed the body (e.g. application/x-www-form-urlencoded). In that case
+    -- we reconstruct from request:data().
+    local ok, rdr = pcall(request.rawrdr, request)
+    if ok and rdr then
+        local chunks, n = {}, 0
+        while true do
+            local chunk = rdr()
+            if not chunk or chunk == "" then break end
+            n = n + 1
+            chunks[n] = chunk
+        end
+        return table.concat(chunks)
+    end
+    local form = request:data()
+    if type(form) == "table" then
+        -- application/x-www-form-urlencoded — recover the raw bytes by
+        -- treating the first (and usually only) key as the body itself, since
+        -- curl --data-binary "TEXT" arrives as form-key "TEXT" with no value.
+        for k, v in pairs(form) do
+            if v == "" or v == nil then return k end
+            return k.."="..tostring(v)
+        end
+    elseif type(form) == "string" then
+        return form
+    end
+    return ""
+end
+
+dir:setfunc(function(_ENV)
+    local url = urldecode((request:url():gsub("^https?://[^/]+", "")))
+
+    if url == "/modules.json" then
+        response:setheader("Access-Control-Allow-Origin", "*")
+        response:setcontenttype"application/json"
+        response:write(json.encode(modules))
+        return true
+    end
+
+    -- WebSocket: /ws/<id>/data/<rel>
+    local wsUrl = url:match"^/ws(/.+)$"
+    if wsUrl and request:header"Sec-WebSocket-Key" then
+        local id, _, diskPath = parseDataPath(wsUrl)
+        if not id then response:senderror(404); return true end
+        local s = ba.socket.req2sock(request)
+        if not s then response:senderror(400); return true end
+        local ws = require"ba.ws".upgrade(s)
+        subs[diskPath] = subs[diskPath] or {}
+        table.insert(subs[diskPath], ws)
+        local current = readFile(diskPath)
+        if current then pcall(function() ws:write(current, true) end) end
+        ws:event(function(msg)
+            if msg then
+                if writeFile(diskPath, msg) then broadcast(diskPath, msg) end
+            else
+                local list = subs[diskPath]
+                if list then
+                    for i, c in ipairs(list) do
+                        if c == ws then table.remove(list, i); break end
+                    end
+                end
+            end
+        end, "r")
+        return true
+    end
+
+    -- HTTP data read/write: /<id>/data/<rel>
+    if url:find"^/[^/]+/data/" then
+        local id, _, diskPath = parseDataPath(url)
+        if not id then response:senderror(404); return true end
+        response:setheader("Access-Control-Allow-Origin", "*")
+
+        local method = request:method()
+        if method == "PUT" then
+            local body = readBody(request)
+            if writeFile(diskPath, body) then
+                broadcast(diskPath, body)
+                response:setstatus(200); response:write""
+            else
+                response:senderror(500)
+            end
+            return true
+        end
+
+        if method == "GET" then
+            local st = appIo:stat(diskPath)
+            if st and st.type == "directory" then
+                response:setcontenttype"text/plain"
+                for name in appIo:files(diskPath) do
+                    if name ~= "." and name ~= ".." and name:sub(1,1) ~= "." then
+                        local sub = appIo:stat(diskPath.."/"..name)
+                        response:write(name..((sub and sub.type == "directory") and "/\n" or "\n"))
+                    end
+                end
+                return true
+            end
+            local data = readFile(diskPath)
+            if data then
+                local ext = diskPath:match"%.([^.]+)$" or ""
+                response:setcontenttype(mime[ext] or "application/octet-stream")
+                response:write(data); return true
+            end
+            response:senderror(404); return true
+        end
+
+        if method == "OPTIONS" then
+            response:setheader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
+            response:setheader("Access-Control-Allow-Headers", "Content-Type")
+            response:setstatus(200); response:write""
+            return true
+        end
+    end
+
+    return false  -- static fall-through
+end)
+
+mime = {
+    txt="text/plain", html="text/html", css="text/css", js="application/javascript",
+    json="application/json", md="text/markdown", xml="application/xml",
+}
+
+scanModules()
+trace(("LenVerse loaded %d module(s)"):format(#modules))

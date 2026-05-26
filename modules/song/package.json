@@ -1,0 +1,7 @@
+{
+  "name": "Piesne",
+  "description": "Pick a setlist, pick a song, send a verse to the live output.",
+  "version": "0.1.0",
+  "dashboard": "index.html",
+  "graphics": "graphics/verse.html"
+}

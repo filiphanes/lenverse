@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LenVerse</title>
+<link rel="stylesheet" href="/modules/shared/lenverse.css">
+<style>
+nav.bar { display: flex; align-items: center; gap: 0; background: var(--bg); border-bottom: 1px solid #8884; position: sticky; top: 0; z-index: 200; }
+nav.bar > a { padding: .5rem 1rem; color: var(--fg); text-decoration: none; font-weight: 600; font-size: .9rem; }
+nav.bar > a:hover { background: #8882; }
+nav.bar .server-info { display: flex; align-items: center; gap: .6rem; margin-left: auto; padding: .3rem 1rem; font-size: .8rem; color: var(--muted); }
+nav.bar .server-info a { color: var(--accent); text-decoration: none; font-family: monospace; }
+nav.bar .server-info a:hover { text-decoration: underline; }
+nav.bar .server-info label { display: flex; align-items: center; gap: .25rem; cursor: pointer; white-space: nowrap; }
+nav.bar .server-info input[type=checkbox] { margin: 0; }
+nav.bar .dropdown { position: relative; }
+nav.bar .dropdown > a, nav.bar .dropdown > span { display: block; padding: .5rem 1rem; cursor: pointer; font-weight: 600; font-size: .9rem; }
+nav.bar .dropdown > a { color: var(--fg); text-decoration: none; }
+nav.bar .dropdown:hover > ul { display: block; }
+nav.bar .dropdown > ul { display: none; position: absolute; top: 2rem; left: 0; margin: 0; background: var(--bg); border: 1px solid #8884; border-radius: 6px; min-width: 160px; padding: .35rem .35rem; box-shadow: 0 4px 12px #0003; list-style: none; }
+nav.bar .dropdown > ul li { list-style: none; }
+nav.bar .dropdown > ul li a { display: block; padding: .35rem 1rem; color: var(--accent); text-decoration: none; white-space: nowrap; font-size: .85rem; }
+nav.bar .dropdown > ul li a:hover { background: #8882; }
+nav.bar .dropdown > ul li button { display: block; width: 100%; text-align: left; padding: .35rem 1rem; color: var(--accent); background: none; border: none; cursor: pointer; white-space: nowrap; font-size: .85rem; font-weight: 400; }
+nav.bar .dropdown > ul li button:hover { background: #8882; }
+nav.bar .dropdown > ul li.sep { border-top: 1px solid #8884; margin: .25rem 0; }
+#dash-frame { width: 100vw; height: calc(100vh - 2.5rem); border: none; z-index: 100; }
+#dash-close { position: fixed; top: .35rem; right: .5rem; z-index: 201; background: var(--bg); border: 1px solid #8884; border-radius: 4px; padding: .15rem .5rem; cursor: pointer; font-size: .9rem; display: none; color: var(--fg); }
+</style>
+</head>
+<body>
+<nav class="bar" id="menu"></nav>
+<iframe id="dash-frame" name="frame"></iframe>
+<script type="module">
+import { listModules } from "/modules/shared/lenverse.js";
+
+const menu = document.getElementById("menu");
+const mods = await listModules().catch(() => []);
+
+let serverInfo = { host: location.hostname, port: location.port || "5005", lan: [] };
+try {
+  const r = await fetch("/server/info");
+  if (r.ok) serverInfo = await r.json();
+} catch {}
+
+const bar = document.createDocumentFragment();
+bar.appendChild(Object.assign(document.createElement("a"), { href: "/", textContent: "LenVerse" }));
+
+for (const m of mods) {
+  const [dashFiles, gfxFiles] = await Promise.all([
+    listHtml(`modules/${m.id}/dashboard`),
+    listHtml(`modules/${m.id}/graphics`),
+  ]);
+
+  const dd = document.createElement("span");
+  dd.className = "dropdown";
+  dd.tabIndex = 0;
+
+  if (m.dashboard) {
+    const label = document.createElement("a");
+    label.textContent = m.name ?? m.id;
+    label.href = `/modules/${m.id}/${m.dashboard}`;
+    label.target = "frame";
+    dd.appendChild(label);
+  } else {
+    const label = document.createElement("span");
+    label.textContent = m.name ?? m.id;
+    dd.appendChild(label);
+  }
+
+  const ul = document.createElement("ul");
+
+  for (const f of dashFiles) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.textContent = f.split("/").pop().replace(".html", "");
+    a.setAttribute("href", `/${f}`);
+        a.setAttribute("target", 'frame');
+    li.appendChild(a);
+    ul.appendChild(li);
+  }
+
+  if (dashFiles.length && gfxFiles.length) {
+    const sep = document.createElement("li");
+    sep.className = "sep";
+    ul.appendChild(sep);
+  }
+
+  for (const f of gfxFiles) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `/${f}`;
+    a.textContent = f.split("/").pop().replace(".html", "");
+    a.target = "_blank";
+    a.rel = "noopener";
+    li.appendChild(a);
+    ul.appendChild(li);
+  }
+
+  if (dashFiles.length || gfxFiles.length) {
+    dd.appendChild(ul);
+    bar.appendChild(dd);
+  }
+}
+
+const info = document.createElement("span");
+info.className = "server-info";
+
+const urlLink = document.createElement("a");
+urlLink.href = location.origin;
+urlLink.textContent = location.host;
+urlLink.target = "_blank";
+urlLink.rel = "noopener";
+info.appendChild(urlLink);
+
+const toggleLabel = document.createElement("label");
+const toggle = document.createElement("input");
+toggle.type = "checkbox";
+toggle.checked = serverInfo.host === "0.0.0.0";
+toggleLabel.appendChild(toggle);
+toggleLabel.append(" Public");
+toggle.addEventListener("change", async () => {
+  const host = toggle.checked ? "0.0.0.0" : "127.0.0.1";
+  try {
+    await fetch("/server/restart", { method: "PUT", body: JSON.stringify({ host }) });
+  } catch {}
+  toggle.disabled = true;
+  toggleLabel.append(" (restart needed)");
+});
+info.appendChild(toggleLabel);
+
+bar.appendChild(info);
+menu.appendChild(bar);
+
+async function listHtml(dir) {
+  try {
+    const r = await fetch(`/${dir}/`);
+    if (!r.ok) return [];
+    const text = await r.text();
+    return text.trim().split("\n").filter(f => f.endsWith(".html")).map(f => `${dir}/${f}`);
+  } catch { return []; }
+}
+</script>
+</body>
+</html>

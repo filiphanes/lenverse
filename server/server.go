@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	baseDir     = "www"
+	baseDir     = "."
 	connections = make(map[string][]*websocket.Conn)
 	mu          sync.Mutex
 

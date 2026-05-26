@@ -1,0 +1,23 @@
+{
+    "arena": {
+        "host": "127.0.0.1",
+        "port": 8090,
+        "clipA": { "layer": 4, "column": 4 },
+        "clipB": { "layer": 4, "column": 5 },
+        "clipClear": { "layer": 4, "column": 6 },
+        "conversions": [
+            "trim-dots",
+            "trim-commas",
+            "remove-newlines",
+            "remove-verses",
+            "remove-numbers",
+            "upper",
+            "lower",
+            "caps"
+        ]
+    },
+    "lenverse": {
+        "host": "127.0.0.1",
+        "port": 5005
+    }
+}

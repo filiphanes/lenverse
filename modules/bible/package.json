@@ -1,0 +1,6 @@
+{
+  "name": "Bible",
+  "description": "Bible verse lookup and display.",
+  "version": "0.1.0",
+  "graphics": "graphics/main-bible.html"
+}

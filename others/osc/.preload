@@ -1,0 +1,131 @@
+-- Capture app globals as upvalues
+local app_io = io
+
+-- JSON support (Mako/Barracuda bundled)
+local json = ba.json
+
+-- Helper: Read null-terminated padded string (multiple of 4 bytes)
+local function read_padded_string(data, pos)
+  if pos > #data then return nil end
+  local nul_pos = data:find("\0", pos)
+  if not nul_pos then return nil end
+  local str = data:sub(pos, nul_pos - 1)
+  local len = nul_pos - pos
+  pos = nul_pos + 1
+  local pads = (4 - (len % 4)) % 4
+  pos = pos + pads
+  return str, pos
+end
+
+-- Basic OSC message unpacker (address, types, args table)
+local function osc_unpack(data)
+  local pos = 1
+  local addr, newpos = read_padded_string(data, pos)
+  if not addr then return nil end
+  pos = newpos
+
+  local typetag, newpos = read_padded_string(data, pos)
+  if not typetag or typetag:sub(1, 1) ~= ',' then return nil end
+  pos = newpos
+  local types = typetag:sub(2)
+
+  local args = {}
+  for i = 1, #types do
+    local t = types:sub(i, i)
+    if t == 'i' then
+      if pos + 3 <= #data then
+        local val = string.unpack("<i4", data, pos)
+        table.insert(args, val)
+        pos = pos + 4
+      end
+    elseif t == 'f' then
+      if pos + 3 <= #data then
+        local val = string.unpack("<f4", data, pos)
+        table.insert(args, val)
+        pos = pos + 4
+      end
+    elseif t == 's' then
+      local val, newpos = read_padded_string(data, pos)
+      if val then
+        table.insert(args, val)
+        pos = newpos
+      end
+    elseif t == 'T' then
+      table.insert(args, true)
+      -- No advance for T/F
+    elseif t == 'F' then
+      table.insert(args, false)
+    -- Skip others (N, I, etc.) - advance 0 or 4 as needed
+    end
+  end
+
+  return {address = addr, types = types, args = args}
+end
+
+-- Recursive directory creation
+local function ensure_dir(io, dirpath)
+  if dirpath == "" or dirpath == "/" then return end
+  local parts = {}
+  for part in dirpath:gmatch("[^/]+") do
+    table.insert(parts, part)
+  end
+  local cumulative = ""
+  for _, part in ipairs(parts) do
+    cumulative = cumulative .. "/" .. part
+    local success, err = pcall(io.mkdir, io, cumulative)
+    if not success then
+      print("Failed to create dir: " .. cumulative .. " (" .. tostring(err) .. ")")
+    end
+  end
+end
+
+-- Log message to file
+local function log_message(msg, ip, port)
+  local filepath = "osc" .. msg.address .. ".log"
+  local dirpath = filepath:match("(.*/?)") or ""  -- Trailing / for root
+  dirpath = dirpath:gsub("/$", "")  -- Clean trailing /
+  ensure_dir(app_io, dirpath)
+
+  local fh = app_io:open(filepath, "a")
+  if fh then
+    local log_entry = {
+      timestamp = os.date("%Y-%m-%d %H:%M:%S"),
+      from = ip .. ":" .. port,
+      address = msg.address,
+      types = msg.types,
+      args = msg.args
+    }
+    local line = json.encode(log_entry) .. "\n"
+    fh:write(line)
+    fh:close()
+  else
+    print("Failed to open log file: " .. filepath)
+  end
+end
+
+-- UDP listener loop (async coroutine)
+local function udp_listener(udp)
+  while true do
+    local data, err, ip, port = udp:recvfrom(1024)
+    if data and not err then
+      local msg = osc_unpack(data)
+      if msg then
+        log_message(msg, ip or "unknown", port or 0)
+      else
+        print("Failed to parse OSC: " .. tostring(data:sub(1, 50)))
+      end
+    elseif err then
+      print("UDP recv error: " .. tostring(err))
+    end
+  end
+end
+
+-- Setup UDP socket on port 9000 (adjust as needed)
+local udp = ba.socket.udp()
+udp:setpeer("0.0.0.0", 9000)
+local co = coroutine.create(function()
+  udp_listener(udp)
+end)
+udp:event(co)
+
+print("OSC receiver started on UDP port 9000. Logs in ./osc/")

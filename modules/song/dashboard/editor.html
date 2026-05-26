@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<head>
+	<title>Editor</title>
+	<link rel="stylesheet" href="../style.css" />
+	<script src="../script.js"></script>
+	<style>
+		.raw .toolbar,
+		.raw #versesList {
+			display: none;
+		}
+		#versesList {
+			padding: 3rem 0;
+		}
+		#divRaw {
+			display: none;
+			white-space: pre;
+			padding: 1rem 1rem 4rem;
+			min-height: 100vh;
+		}
+		.raw #divRaw {
+			display: block;
+		}
+	</style>
+</head>
+
+<body>
+	<section class="toolbar">
+		<button onclick="formatText('b')">b</button>
+		<button onclick="formatText('i')">i</button>
+		<button onclick="formatText('s')">s</button>
+		<button onclick="formatText('u')">u</button>
+		<button onclick="formatText('h1')">h1</button>
+		<button onclick="formatText('h2')">h2</button>
+		<button onclick="formatText('sup')">sup</button>
+		<button onclick="formatText('sub')">sub</button>
+	</section>
+	<ol id="versesList"></ol>
+	<div id="divRaw" contenteditable="true"></div>
+	<section id="controls">
+		<button id="save" title="Save" onclick="save()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M840-680v480q0 33-23 57t-57 23H200q-33 0-56-23t-24-57v-560q0-33 24-56t56-24h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z"/></svg></button>
+		<button id="raw" title="Raw" onclick="toggleRaw()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M320-240 80-480l240-240 57 57-184 184 183 183-56 56Zm320 0-57-57 184-184-183-183 56-56 240 240-240 240Z"/></svg></button>
+	</section>
+
+	<script>
+		const versesListElement = document.getElementById("versesList");
+		const divRaw = document.getElementById("divRaw");
+		const filename = decodeURIComponent(window.location.hash.slice(1));
+		if (!filename) {
+			document.body.textContent = "No file specified. Use editor.html#filename";
+		}
+		let verses = [];
+		let raw = '';
+
+		async function renderVerses() {
+			verses = await parseSong(filename, raw) || [];
+			raw = verses.join('\n\n');
+			versesListElement.innerHTML = "";
+			verses.forEach((verse, i) => {
+				const listItem = document.createElement("li");
+				listItem.innerHTML = verse;
+				listItem.contentEditable = true;
+				versesListElement.appendChild(listItem);
+			});
+		}
+		
+		function getRaw() {
+			if (document.body.classList.contains('raw'))
+				return divRaw.innerText;
+			verses = [];
+			for (let li of versesListElement.children) {
+				verses.push(li.innerHTML)
+			}
+			return verses.join('\n\n');
+		}
+		
+		function toggleRaw() {
+			raw = getRaw();
+			if (document.body.classList.contains('raw')) {
+				renderVerses();
+			} else {
+				divRaw.innerText = raw;
+			}
+			document.body.classList.toggle('raw');
+		}
+		
+		async function save() {
+			const content = getRaw();
+			await PUT(`/songs/${encodeURIComponent(filename)}`, content);
+			console.log('Saved', filename);
+		}
+
+		renderVerses();
+	</script>
+</body>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Biblia</title>
+	<style></style>
+	<link rel="stylesheet" href="style.css" />
+	<script src="script.js"></script>
+	<style>
+		input,
+		button,
+		select {
+			font-family: inherit;
+			font-size: inherit;
+			padding: 0.4em;
+			margin: 0 0 0.25em 0;
+			box-sizing: border-box;
+			border: none;
+			background: #555;
+			color: whitesmoke;
+			border-radius: .5rem;
+		}
+		
+		input:disabled {
+			color: #ccc;
+		}
+		
+		button {
+			color: whitesmoke;
+			background-color: #555;
+			font-size: 1rem;
+			outline: none;
+			margin: 0;
+			line-height: 2rem;
+			width: 3rem;
+			border: 1px solid black;
+			border-radius: .5rem;
+			user-select: none
+		}
+		
+		button:active {
+			background-color: #ddd;
+			color: black;
+		}
+		
+		button:focus {
+			border-color: #666;
+		}
+		
+		.control-button {
+			width: 6rem;
+			/* float: right; */
+		}
+		
+		.books-filter,
+		.address-filter {
+			display: block;
+			width: 49%;
+			margin: 0 1% 1rem 0;
+			padding: 0;
+			height: 10rem;
+			overflow: scroll;
+			float: left;
+			max-width: 15rem;
+		}
+		
+		.book-item,
+		.address-set,
+		.address-remove {
+			width: 100%;
+			margin: 0 0 .1rem;
+			padding: .3rem;
+			text-align: left;
+			color: whitesmoke;
+			border-radius: 0;
+			background: black;
+		}
+		
+		.address-item {
+			width: 100%;
+			padding: 0;
+			margin: 0;
+			max-width: 30rem;
+			display: flex;
+		}
+		
+		.address-set {
+			width: auto;
+			padding: .5rem;
+			margin: 0;
+			text-align: left;
+			flex-grow: 2;
+		}
+		
+		.address-remove {
+			margin: 0;
+			max-width: 2rem;
+			padding: .25rem .5rem;
+			line-height: 1rem;
+		}
+		
+		.preview {
+			padding: .5rem;
+			user-select: text;
+		}
+		.preview.next {
+			color: #777;
+		}
+		
+		.btn-success {
+			background-color: green;
+		}
+		
+		.btn-danger {
+			background-color: red;
+		}
+		
+		.settings {
+			padding: .5rem;
+		}
+		
+		/* NumPads */
+		button {
+			color: whitesmoke;
+			background-color: transparent;
+			font-size: 1rem;
+			outline: none;
+			margin: 0;
+			line-height: 2rem;
+			width: 3rem;
+			border: none;
+		}
+
+		button:active {
+			background-color: #ccc;
+		}
+
+		button:hover,
+		button:focus {
+			background-color: #333;
+		}
+
+		.numberpad {
+			display: grid;
+			grid-template-columns: repeat(3, 3rem);
+			grid-template-rows: repeat(4, 3rem);
+			grid-gap: 0;
+			margin: 0 0 0.5rem 0;
+		}
+	
+		</style>
+</head>
+
+<body>
+
+	<div class="books-filter">
+		<input type="text" id="searchInput" placeholder="Hľadať..." oninput="filterBooks(bookList)" />
+		<ul id="bookList"></ul>
+	</div>
+
+	<div class="history-filter">
+		<ul id="history"></ul>
+	</div>
+
+	<div class="keyboard-container">
+		<div id="chapter"></div>
+		<div class="numberpad">
+			<button onclick="chapterPad.append(1)">1</button>
+			<button onclick="chapterPad.append(2)">2</button>
+			<button onclick="chapterPad.append(3)">3</button>
+			<button onclick="chapterPad.append(4)">4</button>
+			<button onclick="chapterPad.append(5)">5</button>
+			<button onclick="chapterPad.append(6)">6</button>
+			<button onclick="chapterPad.append(7)">7</button>
+			<button onclick="chapterPad.append(8)">8</button>
+			<button onclick="chapterPad.append(9)">9</button>
+			<button onclick="chapterPad.back()">&#x2190;</button>
+			<button onclick="chapterPad.append(0)">0</button>
+			<button onclick="chapterPad.clear()">C</button>
+			<button onclick="chapterPad.add(-1)">-1</button>
+			<button onclick="chapterPad.add(1)">+1</button>
+		</div>
+		<div id="verse"></div>
+		<div class="numberpad">
+			<button onclick="versePad.append(1)">1</button>
+			<button onclick="versePad.append(2)">2</button>
+			<button onclick="versePad.append(3)">3</button>
+			<button onclick="versePad.append(4)">4</button>
+			<button onclick="versePad.append(5)">5</button>
+			<button onclick="versePad.append(6)">6</button>
+			<button onclick="versePad.append(7)">7</button>
+			<button onclick="versePad.append(8)">8</button>
+			<button onclick="versePad.append(9)">9</button>
+			<button onclick="versePad.back()">&#x2190;</button>
+			<button onclick="versePad.append(0)">0</button>
+			<button onclick="versePad.clear()">C</button>
+			<button onclick="versePad.add(-1)">-1</button>
+			<button onclick="versePad.add(1)">+1</button>
+		</div>
+	</div>
+</body>
+
+<div id="bible1preview" class="preview"></div>
+<div id="bible1previewNext" class="preview next"></div>
+<div id="bible2preview" class="preview"></div>
+<div id="bible2previewNext" class="preview next"></div>
+
+<div class="settings">
+  <div class="bible">Preklad:
+    <select id="bible1" onchange="onchangeBible1()"></select>
+  </div>
+
+  <div class="bible">Preklad 2:
+    <select id="bible2" onchange="onchangeBible2()">
+      <option value="">Žiadny</option>
+    </select>
+  </div>
+
+  <div class="bible">
+    <label>
+      <input id="showVerseNumbers" type="checkbox" onchange="renderAddress(address)" /> Čísla veršov
+    </label>
+  </div>
+  <div class="bible">
+    <label>
+      <input id="showNextVerse" type="checkbox" onchange="renderAddress(address)" /> Nasledujúce verše
+    </label>
+  </div>
+  <div class="bible">
+    <label>
+      <input type="checkbox" onchange="onchangeHideOnSelector()" /> Skryť pri výbere knihy
+    </label>
+  </div>
+  <div class="bible">
+    <label>
+      <input type="checkbox" onchange="onchangeSplitButton()" /> Texty do programu až po kliknutí
+    </label>
+  </div>
+</div>
+
+<script>
+	const chapterElement = document.getElementById("chapter");
+	const verseElement = document.getElementById("verse");
+	const cachedBooks = {};
+	const bibles = {};
+
+	let address = {
+		bible1: 'roh',
+		bible2: '',
+		book: 'gn',
+		chapter: 1,
+		verse: 1,
+		vcount: 1,
+	}
+
+	function append(num) { this.update(+this.value*10 + num) }
+	function clear() { this.update(0) }
+	function back() { this.value(Math.floor(+this.value / 10) || 0) }
+	function add() { this.update(this.value + val) }
+	function update(value) {
+		if (this.value === value) return;
+		else if (value > this.max) this.value = this.max;
+		else if (value < this.min) this.value = this.min;
+		else this.value = value;
+		this.render();
+	}
+
+	const chapterPad = {
+		value: 1,
+		min: 0,
+		max: 50,
+		append, clear, back, add, update,
+		render: function() {
+			chapter.textContent = `Kapitola: ${this.value} z ${this.max}`
+			address.chapter = this.value;
+		}
+	}
+	const versePad = {
+		value: 1,
+		min: 0,
+		max: 50,
+		append, clear, back, add, update,
+		render: function() {
+			verse.textContent = `Verš: ${this.value} z ${this.max}`
+			address.verse = this.value;
+		}
+	}
+
+	const updateCurrentAddress = connectToFileWebSocket("/var/bible/bibleaddress.json", data => {
+		try {
+			const adr = JSON.parse(data);
+			if (addressEquals(address, adr)) return;
+			updateAddress(adr);
+		} catch (err) {
+			console.error(err)
+		}
+	})
+
+	async function fetchBibles() {
+		const data = await GET("/bibles/");
+		const bibleDirs = data.trim().split("\n");
+		for (const dir of bibleDirs) {
+			if (dir.endsWith('/')) {
+				const abbr = dir.slice(0, dir.length-1);
+				let data = await GET(`/bibles/${abbr}/_index.json`);
+				bibles[abbr] = JSON.parse(data);
+			}
+		}
+		console.log('Bibles', bibles)
+		renderBookList(bibles[address.bible1].bookslist, bookList);
+		renderBibleList(bibles, document.getElementById('bible1'), address.bible1);
+		renderBibleList(bibles, document.getElementById('bible2'), address.bible2);
+		updateAddress(address);
+	}
+	
+	async function fetchBook(bible, book) {
+		if (!bible || bibles[bible].books) return;
+		const data = await GET(`/bibles/${bible}/${book}.json`);
+		bibles[bible].books[book] = JSON.parse(data);
+	}
+
+	function renderBibleList(bibles, listElement, selected) {
+		if (listElement.id == 'bible2') {
+			listElement.innerHTML = '<option value="">Žiadny</option>';
+		} else {
+			listElement.innerHTML = "";
+		}
+		for (const [abbr, bible] of Object.entries(bibles)) {
+			const option = document.createElement("option");
+			option.value = abbr;
+			option.selected = (abbr === selected);
+			option.textContent = bible.name;
+			listElement.appendChild(option);
+		}
+	}
+	
+	function addressEquals(a1, a2) {
+		return a1.bible1 === a2.bible1
+			&& a1.bible2 === a2.bible2
+			&& a1.book === a2.book
+			&& a1.chapter === a2.chapter
+			&& a1.verse === a2.verse
+			&& a1.vcount === a2.vcount;
+	}
+
+	async function updateAddress(adr) {
+		if (addressEquals(address, adr)) return;
+		console.log('Update adr', adr)
+		if (bibles[adr.bible] === undefined) {
+			console.log('undefined bible[', adr.bible, ']')
+			return;
+		}
+		if (adr.bible1 !== address.bible1) {
+			renderBookList(bibles[adr.bible1].bookslist, bookList);
+			await fetchBook(adr.bible1, adr.book);
+		}
+		if (adr.bible2 !== address.bible2) {
+			await fetchBook(adr.bible2, adr.book);
+		}
+		if (adr.book !== address.book) {
+			await fetchBook(adr.bible1, adr.book)
+			await fetchBook(adr.bible2, adr.book)
+		}
+		chapterPad.max = Object.keys(bibles[adr.bible1].books[adr.book]).length;
+		versePad.max = bibles[adr.bible1].books[adr.book][adr.chapter].length;
+		chapterPad.update(adr.chapter);
+		versePad.update(adr.verse);
+		updateCurrentAddress(JSON.stringify(address));
+		renderAddress(adr);
+	}
+	
+	function addressAsString(bible, a) {
+    if (a === undefined || !bible) return '';
+    const book = bibles[bible].books[a.book];
+    if (!book) return '';
+    var s = book.name + ' ' + a.chapter;
+    if (a.verse) {
+      s += ',' + a.verse;
+      if (a.vcount > 1) {
+        s += '-' + (a.verse + a.vcount - 1);
+      }
+    }
+    return s;
+	}
+  
+	function getAddressContent(bible, adr, numbers) {
+		if (!bible || !adr.chapter || !adr.verse) return '';
+		let vv = bibles[bible].books[adr.book][adr.chapter].slice(adr.verse, adr.verse+adr.vcount-1)
+		if (showVerseNumbers.checked) vv = vv.map((v, i) => `<sub>${i}</sub>${v}`)
+		return vv.join(' ');
+	}
+	
+	function renderAddress(a) {
+		bible1preview.innerHTML = addressAsString(a.bible1, a) + '<br>' + getAddressContent(a.bible1, a);
+		bible2preview.innerHTML = addressAsString(a.bible2, a) + '<br>' + getAddressContent(a.bible2, a);
+		if (showNextVerse.checked) {
+			// TODOa next +1
+			bible1previewNext.innerHTML = addressAsString(a.bible1, a) + '<br>' + getAddressContent(a.bible1, a);
+			bible2previewNext.innerHTML = addressAsString(a.bible2, a) + '<br>' + getAddressContent(a.bible2, a);
+		}
+	}
+
+	function onchangeBible1() {
+		address.bible1 = document.getElementById('bible1').value;
+		updateAddress(address)
+	}
+
+	function onchangeBible2() {
+		address.bible2 = document.getElementById('bible2').value;
+		updateAddress(address)
+	}
+
+	function renderBookList(books, listElement) {
+		listElement.innerHTML = "";
+		books.forEach(book => {
+				const li = document.createElement("li");
+				li.dataset.abbr = book.abbreviation;
+				li.dataset.search = normalizeText(book.name);
+				if (book.aliases) li.dataset.search += normalizeText(book.aliases.join(' '));
+				li.textContent = book.name;
+				listElement.appendChild(li);
+			});
+		filterBooks(listElement);
+	}
+
+	async function filterBooks(listElement) {
+		const query = normalizeText(searchInput.value);
+		for (const li of listElement.children) {
+				li.style.display = li.dataset.search.includes(query) ? "" : "none";
+		}
+	}
+	
+	async function getCachedBook(bible, book) {
+		let content = bibles[bible][bookFile];
+		if (content === undefined) {
+				content = await GET(`/bibles/${bible}/${book}.json`);
+				bibles[bible][book] = JSON.parse(content);
+		}
+		return content;
+	}
+
+	async function addToList(adr) {
+		let currentListData = await GET("/var/bible/biblelist.txt");
+		console.log("Adding adr list:", adr);
+		await PUT("/var/bible/biblelist.txt", currentListData.trim()+'\n'+JSON.stringify(adr));
+	}
+
+	fetchBibles();
+</script>
+</html>

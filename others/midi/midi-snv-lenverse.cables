@@ -1,0 +1,981 @@
+{
+    "_id": "678ad7d558eb1348a467b1b2",
+    "shortId": "RqJ8bA",
+    "name": "midi-lenverse",
+    "description": "",
+    "userId": "678ad7d52a72784f74dc483d",
+    "cachedUsername": "",
+    "created": 1737152469739,
+    "updated": 1739804908357,
+    "visibility": "private",
+    "ops": [
+        {
+            "opId": "517ed1fc-6110-4611-9cc7-8dd459191c65",
+            "id": "fod416hu6",
+            "uiAttribs": {
+                "translate": {
+                    "x": -105,
+                    "y": -97.24770642201835
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "MIDI Channel index",
+                    "value": 0
+                },
+                {
+                    "name": "MIDI Channel",
+                    "value": 1
+                },
+                {
+                    "name": "Note index",
+                    "value": 19
+                },
+                {
+                    "name": "Note",
+                    "value": "G-1 - 19"
+                },
+                {
+                    "name": "Normalize Velocity index",
+                    "value": 0
+                },
+                {
+                    "name": "Normalize Velocity",
+                    "value": "none"
+                },
+                {
+                    "name": "Toggle Gate",
+                    "value": 0
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Trigger Out",
+                    "links": [
+                        {
+                            "portIn": "reload",
+                            "portOut": "Trigger Out",
+                            "objIn": "8x0y3nhua",
+                            "objOut": "fod416hu6"
+                        }
+                    ]
+                },
+                {
+                    "name": "Current Note",
+                    "value": 19
+                },
+                {
+                    "name": "Velocity",
+                    "links": [
+                        {
+                            "portIn": "Number",
+                            "portOut": "Velocity",
+                            "objIn": "titwris2z",
+                            "objOut": "fod416hu6"
+                        }
+                    ]
+                },
+                {
+                    "name": "Gate",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "opId": "484b3a00-41b7-4e3f-8a99-a1b32a764eff",
+            "id": "kun6ujau3",
+            "uiAttribs": {
+                "translate": {
+                    "x": -290.6706906210096,
+                    "y": -218.72910756836458
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "Device index",
+                    "value": 0
+                },
+                {
+                    "name": "Device",
+                    "value": "Ovládač IAC Zbernica 1"
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Event",
+                    "links": [
+                        {
+                            "portIn": "MIDI Event In",
+                            "portOut": "Event",
+                            "objIn": "fod416hu6",
+                            "objOut": "kun6ujau3"
+                        },
+                        {
+                            "portIn": "MIDI Event In",
+                            "portOut": "Event",
+                            "objIn": "3z6p1saw7",
+                            "objOut": "kun6ujau3"
+                        },
+                        {
+                            "portIn": "MIDI Event In",
+                            "portOut": "Event",
+                            "objIn": "d6hom9pj6",
+                            "objOut": "kun6ujau3"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "ba2131a6-782d-40fe-9710-57a8e57051bb",
+            "id": "8x0y3nhua",
+            "uiAttribs": {
+                "translate": {
+                    "x": -115.89752457619159,
+                    "y": 205.11429221739252
+                },
+                "loading": false
+            },
+            "portsIn": [
+                {
+                    "name": "file",
+                    "display": "file",
+                    "title": "URL"
+                },
+                {
+                    "name": "HTTP Method index",
+                    "value": 2
+                },
+                {
+                    "name": "HTTP Method",
+                    "value": "PUT"
+                },
+                {
+                    "name": "Content-Type",
+                    "value": "text/plain"
+                },
+                {
+                    "name": "Content index",
+                    "value": 1
+                },
+                {
+                    "name": "Content",
+                    "value": "String",
+                    "title": "Response Content"
+                },
+                {
+                    "name": "Auto request",
+                    "value": 0
+                },
+                {
+                    "name": "Send Credentials",
+                    "value": 0
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Response Data Url",
+                    "value": ""
+                },
+                {
+                    "name": "Duration MS",
+                    "value": 3
+                },
+                {
+                    "name": "Status Code",
+                    "value": 200
+                },
+                {
+                    "name": "Is Loading",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "opId": "5c6d375a-82db-4366-8013-93f56b4061a9",
+            "id": "titwris2z",
+            "uiAttribs": {
+                "translate": {
+                    "x": -91.89752457619159,
+                    "y": 71.6332312664864
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "Decimal Places",
+                    "value": 4
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Result",
+                    "links": [
+                        {
+                            "portIn": "body",
+                            "portOut": "Result",
+                            "objIn": "8x0y3nhua",
+                            "objOut": "titwris2z"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "517ed1fc-6110-4611-9cc7-8dd459191c65",
+            "id": "3z6p1saw7",
+            "uiAttribs": {
+                "translate": {
+                    "x": -290.6706906210096,
+                    "y": -99.48349050898304
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "MIDI Channel index",
+                    "value": 0
+                },
+                {
+                    "name": "MIDI Channel",
+                    "value": 1
+                },
+                {
+                    "name": "Note index",
+                    "value": 18
+                },
+                {
+                    "name": "Note",
+                    "value": "F#-1 - 18"
+                },
+                {
+                    "name": "Normalize Velocity index",
+                    "value": 0
+                },
+                {
+                    "name": "Normalize Velocity",
+                    "value": "none"
+                },
+                {
+                    "name": "Toggle Gate",
+                    "value": 0
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Trigger Out",
+                    "links": [
+                        {
+                            "portIn": "Set",
+                            "portOut": "Trigger Out",
+                            "objIn": "dtwt1qorp",
+                            "objOut": "3z6p1saw7"
+                        }
+                    ]
+                },
+                {
+                    "name": "Current Note",
+                    "value": 18
+                },
+                {
+                    "name": "Velocity",
+                    "links": [
+                        {
+                            "portIn": "Number",
+                            "portOut": "Velocity",
+                            "objIn": "dtwt1qorp",
+                            "objOut": "3z6p1saw7"
+                        }
+                    ]
+                },
+                {
+                    "name": "Gate",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "opId": "517ed1fc-6110-4611-9cc7-8dd459191c65",
+            "id": "d6hom9pj6",
+            "uiAttribs": {
+                "translate": {
+                    "x": -442.9826702588896,
+                    "y": -102.26635560852172
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "MIDI Channel index",
+                    "value": 0
+                },
+                {
+                    "name": "MIDI Channel",
+                    "value": 1
+                },
+                {
+                    "name": "Note index",
+                    "value": 17
+                },
+                {
+                    "name": "Note",
+                    "value": "F-1 - 17"
+                },
+                {
+                    "name": "Normalize Velocity index",
+                    "value": 0
+                },
+                {
+                    "name": "Normalize Velocity",
+                    "value": "none"
+                },
+                {
+                    "name": "Toggle Gate",
+                    "value": 0
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Trigger Out",
+                    "links": [
+                        {
+                            "portIn": "Set",
+                            "portOut": "Trigger Out",
+                            "objIn": "698li2qkp",
+                            "objOut": "d6hom9pj6"
+                        }
+                    ]
+                },
+                {
+                    "name": "Current Note",
+                    "value": 17
+                },
+                {
+                    "name": "Velocity",
+                    "links": [
+                        {
+                            "portIn": "Number",
+                            "portOut": "Velocity",
+                            "objIn": "698li2qkp",
+                            "objOut": "d6hom9pj6"
+                        }
+                    ]
+                },
+                {
+                    "name": "Gate",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "opId": "ba2131a6-782d-40fe-9710-57a8e57051bb",
+            "id": "jsra5fieo",
+            "uiAttribs": {
+                "translate": {
+                    "x": -374.6706906210096,
+                    "y": 300.5166526109762
+                },
+                "loading": false,
+                "error": null
+            },
+            "portsIn": [
+                {
+                    "name": "file",
+                    "display": "file",
+                    "title": "URL"
+                },
+                {
+                    "name": "HTTP Method index",
+                    "value": 2
+                },
+                {
+                    "name": "HTTP Method",
+                    "value": "PUT"
+                },
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Content index",
+                    "value": 1
+                },
+                {
+                    "name": "Content",
+                    "value": "String",
+                    "title": "Response Content"
+                },
+                {
+                    "name": "Auto request",
+                    "value": 0
+                },
+                {
+                    "name": "Send Credentials",
+                    "value": 0
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Response Data Url",
+                    "value": ""
+                },
+                {
+                    "name": "Duration MS",
+                    "value": 9
+                },
+                {
+                    "name": "Status Code",
+                    "value": 200
+                },
+                {
+                    "name": "Is Loading",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "opId": "c8fb181e-0b03-4b41-9e55-06b6267bc634",
+            "id": "xxprn71ir",
+            "uiAttribs": {
+                "mathTitle": true,
+                "translate": {
+                    "x": -338.6706906210096,
+                    "y": 85.17761769722598
+                }
+            },
+            "portsOut": [
+                {
+                    "name": "result",
+                    "links": [
+                        {
+                            "portIn": "index",
+                            "portOut": "result",
+                            "objIn": "n5ar4a2ld",
+                            "objOut": "xxprn71ir"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "9989b1c0-1073-4d5f-bfa0-36dd98b66e27",
+            "id": "698li2qkp",
+            "uiAttribs": {
+                "translate": {
+                    "x": -418.9826702588896,
+                    "y": -44.594000374769706
+                }
+            },
+            "portsOut": [
+                {
+                    "name": "Next",
+                    "links": [
+                        {
+                            "portIn": "reload",
+                            "portOut": "Next",
+                            "objIn": "jsra5fieo",
+                            "objOut": "698li2qkp"
+                        }
+                    ]
+                },
+                {
+                    "name": "Out Value",
+                    "links": [
+                        {
+                            "portIn": "number1",
+                            "portOut": "Out Value",
+                            "objIn": "kphqlpr44",
+                            "objOut": "698li2qkp"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "9989b1c0-1073-4d5f-bfa0-36dd98b66e27",
+            "id": "dtwt1qorp",
+            "uiAttribs": {
+                "translate": {
+                    "x": -278.6706906210096,
+                    "y": -45.988790465620596
+                }
+            },
+            "portsOut": [
+                {
+                    "name": "Next",
+                    "links": [
+                        {
+                            "portIn": "reload",
+                            "portOut": "Next",
+                            "objIn": "jsra5fieo",
+                            "objOut": "dtwt1qorp"
+                        }
+                    ]
+                },
+                {
+                    "name": "Out Value",
+                    "links": [
+                        {
+                            "portIn": "number1",
+                            "portOut": "Out Value",
+                            "objIn": "q6rt9jth1",
+                            "objOut": "dtwt1qorp"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "1bbdae06-fbb2-489b-9bcc-36c9d65bd441",
+            "id": "kphqlpr44",
+            "uiAttribs": {
+                "mathTitle": true,
+                "translate": {
+                    "x": -373.9508719257128,
+                    "y": 19.48682620641122
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "number2",
+                    "value": 100
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "result",
+                    "links": [
+                        {
+                            "portIn": "number1",
+                            "portOut": "result",
+                            "objIn": "xxprn71ir",
+                            "objOut": "kphqlpr44"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "d697ff82-74fd-4f31-8f54-295bc64e713d",
+            "id": "lf1qb0o66",
+            "uiAttribs": {
+                "title": "Lenverse URL",
+                "translate": {
+                    "x": -697.2841341366277,
+                    "y": 97.55264712333869
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "value",
+                    "value": "http://127.0.0.1:5005",
+                    "title": "lenverse URL"
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "String",
+                    "links": [
+                        {
+                            "portIn": "string1",
+                            "portOut": "String",
+                            "objIn": "gbontmgra",
+                            "objOut": "lf1qb0o66"
+                        },
+                        {
+                            "portIn": "string1",
+                            "portOut": "String",
+                            "objIn": "qegbex9ah",
+                            "objOut": "lf1qb0o66"
+                        },
+                        {
+                            "portIn": "string1",
+                            "portOut": "String",
+                            "objIn": "6wu2qcgoi",
+                            "objOut": "lf1qb0o66"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "a52722aa-0ca9-402c-a844-b7e98a6c6e60",
+            "id": "gbontmgra",
+            "uiAttribs": {
+                "title": "verseindex",
+                "translate": {
+                    "x": -589.8762833033576,
+                    "y": 159.97134926669466
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "string2",
+                    "value": "/current/verseindex.txt"
+                },
+                {
+                    "name": "New Line",
+                    "value": 0
+                },
+                {
+                    "name": "Active",
+                    "value": 1
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "result",
+                    "links": [
+                        {
+                            "portIn": "file",
+                            "portOut": "result",
+                            "objIn": "8x0y3nhua",
+                            "objOut": "gbontmgra"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "a52722aa-0ca9-402c-a844-b7e98a6c6e60",
+            "id": "qegbex9ah",
+            "uiAttribs": {
+                "title": "songpath",
+                "translate": {
+                    "x": -697.2841341366277,
+                    "y": 157.309787486608
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "string2",
+                    "value": "/current/songpath.txt"
+                },
+                {
+                    "name": "New Line",
+                    "value": 0
+                },
+                {
+                    "name": "Active",
+                    "value": 1
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "result",
+                    "links": [
+                        {
+                            "portIn": "file",
+                            "portOut": "result",
+                            "objIn": "jsra5fieo",
+                            "objOut": "qegbex9ah"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "ba2131a6-782d-40fe-9710-57a8e57051bb",
+            "id": "l4h2jhvcm",
+            "uiAttribs": {
+                "translate": {
+                    "x": -675.1498603796425,
+                    "y": 257.35686208922283
+                },
+                "loading": false,
+                "error": null
+            },
+            "portsIn": [
+                {
+                    "name": "file",
+                    "display": "file",
+                    "title": "URL"
+                },
+                {
+                    "name": "body",
+                    "value": ""
+                },
+                {
+                    "name": "HTTP Method index",
+                    "value": 0
+                },
+                {
+                    "name": "HTTP Method",
+                    "value": "GET"
+                },
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                },
+                {
+                    "name": "Content index",
+                    "value": 1
+                },
+                {
+                    "name": "Content",
+                    "value": "String",
+                    "title": "Response Content"
+                },
+                {
+                    "name": "Auto request",
+                    "value": 1
+                },
+                {
+                    "name": "Send Credentials",
+                    "value": 0
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Response String",
+                    "links": [
+                        {
+                            "portIn": "text",
+                            "portOut": "Response String",
+                            "objIn": "4bl4namcf",
+                            "objOut": "l4h2jhvcm"
+                        }
+                    ]
+                },
+                {
+                    "name": "Response Data Url",
+                    "value": ""
+                },
+                {
+                    "name": "Duration MS",
+                    "value": 5
+                },
+                {
+                    "name": "Status Code",
+                    "value": 200
+                },
+                {
+                    "name": "Is Loading",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "opId": "a52722aa-0ca9-402c-a844-b7e98a6c6e60",
+            "id": "6wu2qcgoi",
+            "uiAttribs": {
+                "translate": {
+                    "x": -772.84596523806,
+                    "y": 158.0212049436487
+                },
+                "title": "list"
+            },
+            "portsIn": [
+                {
+                    "name": "string2",
+                    "value": "/lists/newlevel.readonly.txt"
+                },
+                {
+                    "name": "New Line",
+                    "value": 0
+                },
+                {
+                    "name": "Active",
+                    "value": 1
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "result",
+                    "links": [
+                        {
+                            "portIn": "file",
+                            "portOut": "result",
+                            "objIn": "l4h2jhvcm",
+                            "objOut": "6wu2qcgoi"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "c974de41-4ce4-4432-b94d-724741109c71",
+            "id": "4bl4namcf",
+            "uiAttribs": {
+                "translate": {
+                    "x": -663.1498603796425,
+                    "y": 295.99442220507046
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "separator",
+                    "value": ","
+                },
+                {
+                    "name": "Numbers",
+                    "value": 0
+                },
+                {
+                    "name": "Trim",
+                    "value": 1
+                },
+                {
+                    "name": "Split Lines",
+                    "value": 1
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "array",
+                    "links": [
+                        {
+                            "portIn": "array",
+                            "portOut": "array",
+                            "objIn": "n5ar4a2ld",
+                            "objOut": "4bl4namcf"
+                        }
+                    ]
+                },
+                {
+                    "name": "length",
+                    "value": 14
+                }
+            ]
+        },
+        {
+            "opId": "be8f16c0-0c8a-48a2-a92b-45dbf88c76c1",
+            "id": "n5ar4a2ld",
+            "uiAttribs": {
+                "translate": {
+                    "x": -350.6706906210096,
+                    "y": 253.25237632951286
+                }
+            },
+            "portsOut": [
+                {
+                    "name": "result",
+                    "links": [
+                        {
+                            "portIn": "body",
+                            "portOut": "result",
+                            "objIn": "jsra5fieo",
+                            "objOut": "n5ar4a2ld"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "opId": "c8fb181e-0b03-4b41-9e55-06b6267bc634",
+            "id": "q6rt9jth1",
+            "uiAttribs": {
+                "mathTitle": true,
+                "translate": {
+                    "x": -288,
+                    "y": 40
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "number2",
+                    "value": -50
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "result",
+                    "links": [
+                        {
+                            "portIn": "number2",
+                            "portOut": "result",
+                            "objIn": "xxprn71ir",
+                            "objOut": "q6rt9jth1"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "settings": {
+        "licence": "none"
+    },
+    "userList": [
+        {
+            "username": "",
+            "_id": "678ad7d52a72784f74dc483d",
+            "profile_theme": "dark",
+            "isStaff": false,
+            "usernameLowercase": "",
+            "isAdmin": false,
+            "theme": "dark",
+            "created": 1737152469739
+        }
+    ],
+    "teams": [],
+    "log": [],
+    "ui": {
+        "viewBox": {},
+        "timeLineLength": 20,
+        "texPreview": {},
+        "bookmarks": [],
+        "viewBoxesGl": {
+            "0": {
+                "x": -309.76602135972735,
+                "y": 93.46162441350066,
+                "z": 791.4910995170228
+            }
+        },
+        "outline": {
+            "includeBookmarks": true,
+            "includeSubpatches": true,
+            "includeCommented": true,
+            "includeComments": true,
+            "includeAreas": true,
+            "includeColored": true
+        },
+        "renderer": {
+            "w": 689,
+            "h": 320,
+            "s": 1
+        }
+    },
+    "summary": {
+        "title": "midi-lenverse"
+    },
+    "opsHash": "9bd2195af3f5a11c1a2c5e98bc6586153a4ce423",
+    "buildInfo": {
+        "updateWarning": false,
+        "core": {
+            "timestamp": 1738225950540,
+            "created": "2025-01-30T08:32:30.540Z",
+            "git": {
+                "branch": "develop",
+                "commit": "00c592dcab4a087bd031f3cd3c42e93f88eb2400",
+                "date": "1738170823",
+                "message": "shortid"
+            }
+        },
+        "ui": {
+            "timestamp": 1738225963443,
+            "created": "2025-01-30T08:32:43.443Z",
+            "git": {
+                "branch": "develop",
+                "commit": "194cdb506b97a97d3ee3a532d1ec2edc81dae305",
+                "date": "1738169232",
+                "message": "doc"
+            }
+        },
+        "api": {
+            "timestamp": 1738225981618,
+            "created": "2025-01-30T08:33:01.618Z",
+            "git": {
+                "branch": "develop",
+                "commit": "ad23511d569442ada7d3b4b5a0606598a9c36ef9",
+                "date": "1737634553",
+                "message": "logger",
+                "tag": "v2025-01-24-nightly"
+            },
+            "platform": {
+                "os": ":mac",
+                "npm": "10.5.2",
+                "node": "20.13.1"
+            },
+            "version": "0.5.3"
+        }
+    },
+    "updatedByUser": "",
+    "screenshot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAAAFoCAYAAADHMkpRAAAAAXNSR0IArs4c6QAAEnZJREFUeF7t1kEBAAAIAjHpX9ogNxswfLBzBAgQIECAAAECKYGl0gpLgAABAgQIECBwBqAnIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBAwAP0AAQIECBAgQCAmYADGCheXAAECBAgQIGAA+gECBAgQIECAQEzAAIwVLi4BAgQIECBAwAD0AwQIECBAgACBmIABGCtcXAIECBAgQICAAegHCBAgQIAAAQIxAQMwVri4BAgQIECAAAED0A8QIECAAAECBGICBmCscHEJECBAgAABAgagHyBAgAABAgQIxAQMwFjh4hIgQIAAAQIEDEA/QIAAAQIECBCICRiAscLFJUCAAAECBAgYgH6AAAECBAgQIBATMABjhYtLgAABAgQIEDAA/QABAgQIECBAICZgAMYKF5cAAQIECBAgYAD6AQIECBAgQIBATMAAjBUuLgECBAgQIEDAAPQDBAgQIECAAIGYgAEYK1xcAgQIECBAgIAB6AcIECBAgAABAjEBAzBWuLgECBAgQIAAAQPQDxAgQIAAAQIEYgIGYKxwcQkQIECAAAECBqAfIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBAwAP0AAQIECBAgQCAmYADGCheXAAECBAgQIGAA+gECBAgQIECAQEzAAIwVLi4BAgQIECBAwAD0AwQIECBAgACBmIABGCtcXAIECBAgQICAAegHCBAgQIAAAQIxAQMwVri4BAgQIECAAAED0A8QIECAAAECBGICBmCscHEJECBAgAABAgagHyBAgAABAgQIxAQMwFjh4hIgQIAAAQIEDEA/QIAAAQIECBCICRiAscLFJUCAAAECBAgYgH6AAAECBAgQIBATMABjhYtLgAABAgQIEDAA/QABAgQIECBAICZgAMYKF5cAAQIECBAgYAD6AQIECBAgQIBATMAAjBUuLgECBAgQIEDAAPQDBAgQIECAAIGYgAEYK1xcAgQIECBAgIAB6AcIECBAgAABAjEBAzBWuLgECBAgQIAAAQPQDxAgQIAAAQIEYgIGYKxwcQkQIECAAAECBqAfIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBAwAP0AAQIECBAgQCAmYADGCheXAAECBAgQIGAA+gECBAgQIECAQEzAAIwVLi4BAgQIECBAwAD0AwQIECBAgACBmIABGCtcXAIECBAgQICAAegHCBAgQIAAAQIxAQMwVri4BAgQIECAAAED0A8QIECAAAECBGICBmCscHEJECBAgAABAgagHyBAgAABAgQIxAQMwFjh4hIgQIAAAQIEDEA/QIAAAQIECBCICRiAscLFJUCAAAECBAgYgH6AAAECBAgQIBATMABjhYtLgAABAgQIEDAA/QABAgQIECBAICZgAMYKF5cAAQIECBAgYAD6AQIECBAgQIBATMAAjBUuLgECBAgQIEDAAPQDBAgQIECAAIGYgAEYK1xcAgQIECBAgIAB6AcIECBAgAABAjEBAzBWuLgECBAgQIAAAQPQDxAgQIAAAQIEYgIGYKxwcQkQIECAAAECBqAfIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBAwAP0AAQIECBAgQCAmYADGCheXAAECBAgQIGAA+gECBAgQIECAQEzAAIwVLi4BAgQIECBAwAD0AwQIECBAgACBmIABGCtcXAIECBAgQICAAegHCBAgQIAAAQIxAQMwVri4BAgQIECAAAED0A8QIECAAAECBGICBmCscHEJECBAgAABAgagHyBAgAABAgQIxAQMwFjh4hIgQIAAAQIEDEA/QIAAAQIECBCICRiAscLFJUCAAAECBAgYgH6AAAECBAgQIBATMABjhYtLgAABAgQIEDAA/QABAgQIECBAICZgAMYKF5cAAQIECBAgYAD6AQIECBAgQIBATMAAjBUuLgECBAgQIEDAAPQDBAgQIECAAIGYgAEYK1xcAgQIECBAgIAB6AcIECBAgAABAjEBAzBWuLgECBAgQIAAAQPQDxAgQIAAAQIEYgIGYKxwcQkQIECAAAECBqAfIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBAwAP0AAQIECBAgQCAmYADGCheXAAECBAgQIGAA+gECBAgQIECAQEzAAIwVLi4BAgQIECBAwAD0AwQIECBAgACBmIABGCtcXAIECBAgQICAAegHCBAgQIAAAQIxAQMwVri4BAgQIECAAAED0A8QIECAAAECBGICBmCscHEJECBAgAABAgagHyBAgAABAgQIxAQMwFjh4hIgQIAAAQIEDEA/QIAAAQIECBCICRiAscLFJUCAAAECBAgYgH6AAAECBAgQIBATMABjhYtLgAABAgQIEDAA/QABAgQIECBAICZgAMYKF5cAAQIECBAgYAD6AQIECBAgQIBATMAAjBUuLgECBAgQIEDAAPQDBAgQIECAAIGYgAEYK1xcAgQIECBAgIAB6AcIECBAgAABAjEBAzBWuLgECBAgQIAAAQPQDxAgQIAAAQIEYgIGYKxwcQkQIECAAAECBqAfIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBAwAP0AAQIECBAgQCAmYADGCheXAAECBAgQIGAA+gECBAgQIECAQEzAAIwVLi4BAgQIECBAwAD0AwQIECBAgACBmIABGCtcXAIECBAgQICAAegHCBAgQIAAAQIxAQMwVri4BAgQIECAAAED0A8QIECAAAECBGICBmCscHEJECBAgAABAgagHyBAgAABAgQIxAQMwFjh4hIgQIAAAQIEDEA/QIAAAQIECBCICRiAscLFJUCAAAECBAgYgH6AAAECBAgQIBATMABjhYtLgAABAgQIEDAA/QABAgQIECBAICZgAMYKF5cAAQIECBAgYAD6AQIECBAgQIBATMAAjBUuLgECBAgQIEDAAPQDBAgQIECAAIGYgAEYK1xcAgQIECBAgIAB6AcIECBAgAABAjEBAzBWuLgECBAgQIAAAQPQDxAgQIAAAQIEYgIGYKxwcQkQIECAAAECBqAfIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBAwAP0AAQIECBAgQCAmYADGCheXAAECBAgQIGAA+gECBAgQIECAQEzAAIwVLi4BAgQIECBAwAD0AwQIECBAgACBmIABGCtcXAIECBAgQICAAegHCBAgQIAAAQIxAQMwVri4BAgQIECAAAED0A8QIECAAAECBGICBmCscHEJECBAgAABAgagHyBAgAABAgQIxAQMwFjh4hIgQIAAAQIEDEA/QIAAAQIECBCICRiAscLFJUCAAAECBAgYgH6AAAECBAgQIBATMABjhYtLgAABAgQIEDAA/QABAgQIECBAICZgAMYKF5cAAQIECBAgYAD6AQIECBAgQIBATMAAjBUuLgECBAgQIEDAAPQDBAgQIECAAIGYgAEYK1xcAgQIECBAgIAB6AcIECBAgAABAjEBAzBWuLgECBAgQIAAAQPQDxAgQIAAAQIEYgIGYKxwcQkQIECAAAECBqAfIECAAAECBAjEBAzAWOHiEiBAgAABAgQMQD9AgAABAgQIEIgJGICxwsUlQIAAAQIECBiAfoAAAQIECBAgEBMwAGOFi0uAAAECBAgQMAD9AAECBAgQIEAgJmAAxgoXlwABAgQIECBgAPoBAgQIECBAgEBMwACMFS4uAQIECBAgQMAA9AMECBAgQIAAgZiAARgrXFwCBAgQIECAgAHoBwgQIECAAAECMQEDMFa4uAQIECBAgAABA9APECBAgAABAgRiAgZgrHBxCRAgQIAAAQIGoB8gQIAAAQIECMQEDMBY4eISIECAAAECBAxAP0CAAAECBAgQiAkYgLHCxSVAgAABAgQIGIB+gAABAgQIECAQEzAAY4WLS4AAAQIECBB47NMBaUf8hNoAAAAASUVORK5CYII="
+}
