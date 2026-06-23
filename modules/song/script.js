@@ -2,12 +2,30 @@ HOST = window.location.host;
 
 function connectToFileWebSocket(path, onUpdateCallback) {
 	let ws;
+	let pending = null; // last value queued while CONNECTING
+
+	function send(text) {
+		if (!ws) return;
+		if (ws.readyState === WebSocket.OPEN) {
+			ws.send(text);
+		} else {
+			// Still CONNECTING (or reconnecting): hold the latest value and
+			// flush it once the handshake completes.
+			pending = text;
+		}
+	}
+
 	function reconnect() {
 		const proto = location.protocol === "https:" ? "wss:" : "ws:";
 		ws = new WebSocket(`${proto}//${HOST}${path}`);
 		ws.onopen = () => {
 			console.log("WebSocket connected to", path);
-			document.body.classList.add("connected")
+			document.body.classList.add("connected");
+			if (pending !== null) {
+				const text = pending;
+				pending = null;
+				ws.send(text);
+			}
 		};
 
 		if (typeof onUpdateCallback === "function") {
@@ -19,7 +37,7 @@ function connectToFileWebSocket(path, onUpdateCallback) {
 		ws.onclose = () => {
 			console.log("WebSocket connection to ", path, "closed");
 			setTimeout(reconnect, 1000);
-			document.body.classList.remove("connected")
+			document.body.classList.remove("connected");
 		};
 
 		ws.onerror = (error) => {
@@ -29,7 +47,7 @@ function connectToFileWebSocket(path, onUpdateCallback) {
 	reconnect();
 
 	return function updateFileWS(text) {
-		return ws.send(text);
+		return send(text);
 	};
 }
 
