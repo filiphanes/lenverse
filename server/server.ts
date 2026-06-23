@@ -15,6 +15,7 @@ import { readdir, stat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve, extname, relative } from "node:path";
 import { pathToFileURL } from "node:url";
+import { spawn } from "node:child_process";
 import { networkInterfaces } from "node:os";
 import type { ServerWebSocket } from "bun";
 import { Module, type Manifest, type ModuleHost } from "./api";
@@ -61,6 +62,24 @@ function safePath(urlPath: string): string | null {
   const norm = (p: string) => p.replace(/\\/g, "/");
   if (norm(abs) !== norm(root) && !norm(abs).startsWith(norm(root) + "/")) return null;
   return abs;
+}
+
+/** OS-independent prefix test — Windows paths use backslashes. */
+function within(absPath: string, dir: string): boolean {
+  const norm = (p: string) => p.replace(/\\/g, "/");
+  const a = norm(absPath), d = norm(dir);
+  return a === d || a.startsWith(d + "/");
+}
+
+/** Restart this process cross-platform (SIGHUP does not exist on Windows). */
+function respawn(env: NodeJS.ProcessEnv): void {
+  const child = spawn(process.argv0, process.argv.slice(1), {
+    detached: true,
+    stdio: "inherit",
+    env,
+  });
+  child.unref();
+  setTimeout(() => process.exit(0), 100);
 }
 
 async function dirListing(dir: string): Promise<string> {
@@ -224,8 +243,7 @@ const server = Bun.serve<WSData, {}>({
         const cfg = JSON.parse(body);
         if (cfg.host !== HOST) {
           console.log(`restart requested: host ${cfg.host} (current: ${HOST})`);
-          process.env.HOST = cfg.host;
-          setTimeout(() => process.kill(process.pid, "SIGHUP"), 100);
+          respawn({ ...process.env, HOST: cfg.host });
         }
         return new Response("OK", { headers: CORS });
       }
@@ -237,7 +255,7 @@ const server = Bun.serve<WSData, {}>({
       const topic = relative(ROOT, abs).replace(/\\/g, "/");
       broadcast(topic, body);
       for (const [id, mod] of modules) {
-        if (abs.startsWith(mod.dataDir + "/")) {
+        if (within(abs, mod.dataDir)) {
           mod._ingest(relative(mod.dataDir, abs).replace(/\\/g, "/"), body);
         }
       }
@@ -281,7 +299,7 @@ const server = Bun.serve<WSData, {}>({
       await writeFile(absPath, text);
       broadcast(topic, text, ws);
       for (const [id, mod] of modules) {
-        if (absPath.startsWith(mod.dataDir + "/")) {
+        if (within(absPath, mod.dataDir)) {
           mod._ingest(relative(mod.dataDir, absPath).replace(/\\/g, "/"), text);
         }
       }
