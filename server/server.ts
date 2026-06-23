@@ -180,7 +180,7 @@ const server = Bun.serve<WSData, {}>({
   async fetch(req, server) {
     const url = new URL(req.url);
     const path = decodeURIComponent(url.pathname);
-    console.log(req.method, path);
+    console.log(req.method, path.replace(/^\/+/, ""));
 
     if (req.method === "OPTIONS")
       return new Response(null, { status: 204, headers: CORS });
