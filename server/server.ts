@@ -57,7 +57,9 @@ const modules = new Map<string, Module>();
 function safePath(urlPath: string): string | null {
   const rel = urlPath.replace(/^\/+/, "") || ".";
   const abs = resolve(ROOT, rel);
-  if (abs !== resolve(ROOT) && !abs.startsWith(resolve(ROOT) + "/")) return null;
+  const root = resolve(ROOT);
+  const norm = (p: string) => p.replace(/\\/g, "/");
+  if (norm(abs) !== norm(root) && !norm(abs).startsWith(norm(root) + "/")) return null;
   return abs;
 }
 
@@ -188,7 +190,9 @@ const server = Bun.serve<WSData, {}>({
     if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
       const abs = safePath(path);
       if (!abs) return new Response("Forbidden", { status: 403 });
-      if (!abs.startsWith(ROOT + "/") && abs !== ROOT)
+      const root = resolve(ROOT);
+      const norm = (p: string) => p.replace(/\\/g, "/");
+      if (norm(abs) !== norm(root) && !norm(abs).startsWith(norm(root) + "/"))
         return new Response("Forbidden", { status: 403 });
       const topic = relative(ROOT, abs).replace(/\\/g, "/");
       const ok = server.upgrade(req, { data: { topic, absPath: abs } });
