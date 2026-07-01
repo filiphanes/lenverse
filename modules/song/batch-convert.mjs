@@ -2,14 +2,15 @@
 // batch-convert.mjs — convert every OpenLyrics / OpenSong XML song in the
 // library to lenverse plain text, in one pass.
 //
-//   node batch-convert.mjs                       # whole songs/ library
+//   node batch-convert.mjs                       # whole songs/ library → .txt
 //   node batch-convert.mjs --dir=path/to/songs   # custom library root
+//   node batch-convert.mjs --to=markdown         # write Markdown (.md) instead
+//   node batch-convert.mjs --to=openlyrics       # write OpenLyrics XML (.xml)
 //   node batch-convert.mjs --dry-run             # report only, write nothing
-//   node batch-convert.mjs --overwrite           # overwrite existing .txt
+//   node batch-convert.mjs --overwrite           # overwrite existing outputs
 //   node batch-convert.mjs --only-openlyrics     # skip OpenSong XML
 //
-// Reuses the converters from ./convert.mjs. No dependencies — node:fs only.
-// Works with `bun` too.
+// Reuses the converters from ./convert.mjs (→ ./format.mjs). No deps.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname, relative } from "node:path";
@@ -36,6 +37,7 @@ function hasFlag(name) {
 // dir is two levels up + "songs". Overridable via --dir or LENVERSE_SONGS_DIR.
 const DEFAULT_SONGS = fileURLToPath(new URL("../../songs/", import.meta.url));
 const root = argValue("dir", "") || process.env.LENVERSE_SONGS_DIR || DEFAULT_SONGS;
+const to = argValue("to", "text") || "text";
 const dryRun = hasFlag("dry-run");
 const overwrite = hasFlag("overwrite");
 const onlyOpenLyrics = hasFlag("only-openlyrics");
@@ -93,11 +95,11 @@ for (const file of xmlFiles) {
 		continue;
 	}
 
-	const r = convertFile(file, { overwrite });
+	const r = convertFile(file, { overwrite, to });
 	if (!r) continue;
 	if (r.status === "wrote") {
 		results.wrote.push(file);
-		console.log(`wrote (${dialect}): ${relative(root, r.out)}`);
+		console.log(`wrote (${dialect}→${to}): ${relative(root, r.out)}`);
 	} else {
 		results.skip.push(file);
 		console.log(`skip (exists): ${rel}`);
@@ -113,4 +115,5 @@ console.log(`XML      ${xmlFiles.length}  (openlyrics ${tally.openlyrics}, opens
 console.log(`Wrote    ${results.wrote.length}`);
 console.log(`Skipped  ${results.skip.length} existing` +
 	(results.skippedFilter.length ? `, ${results.skippedFilter.length} filtered` : ""));
+if (to !== "text") console.log(`Output format: ${to}`);
 if (dryRun) console.log("(dry-run — nothing was written)");

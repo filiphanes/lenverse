@@ -3,6 +3,14 @@
     <title>Songs</title>
     <link rel="stylesheet" href="../style.css" />
     <script src="../script.js"></script>
+    <style>
+        body.drag { outline: 2px dashed #6af; outline-offset: -8px; }
+        body.drag::after {
+            content: "Drop songs to import as .txt";
+            position: fixed; inset: 0; display: grid; place-items: center;
+            font-size: 1.4rem; color: #6af; pointer-events: none;
+        }
+    </style>
 </head>
 <body>
 <section class="toolbar">
@@ -119,6 +127,33 @@
     connectToFileWebSocket("/var/list/current.txt", async (data) => {
         currentListData = data.trim() ? data.trim().split("\n") : [];
         refreshRemoveButtons();
+    });
+
+    // --- drag & drop import: drop any song file, convert to lenverse .txt ---
+    const dropZone = document.body;
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+        if (e.target === dropZone) dropZone.classList.remove('drag');
+    });
+    dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag');
+        const files = [...(e.dataTransfer?.files || [])];
+        if (!files.length) return;
+        const fmt = await import('../format.mjs');
+        for (const file of files) {
+            const raw = await file.text();
+            const from = fmt.detectFormat(file.name, raw);
+            const text = fmt.convert(raw, from, 'text', { filename: file.name });
+            const name = file.name.replace(/\.[^.]+$/, '') + '.txt';
+            const path = (currentFolder || '') + name;
+            await PUT(`/songs/${encodeURIComponent(path)}`, text);
+            console.log('Imported', file.name, '→', path);
+        }
+        fetchSongs();
     });
 
     function refreshRemoveButtons() {

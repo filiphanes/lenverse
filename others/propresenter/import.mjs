@@ -1,27 +1,11 @@
 import fetch from 'node-fetch';
 import fs from 'fs';
+// Reuse the shared, isomorphic converters so this importer stays in sync with
+// the rest of the app instead of keeping its own copy of the parser.
+import { readProPresenter, writeText } from '../../modules/song/format.mjs';
 
 // Base URL of the ProPresenter API
 const BASE_URL = 'http://127.0.0.1:8084';
-
-function parseProJson(data) {
-	const verses = [];
-	for (let group of data.presentation.groups) {
-		for (let slide of group.slides) {
-			if (slide.enabled === false) continue;
-			const fields = slide.text.split('\r');
-			let verse = slide.label ? `<h1>${slide.label}</h1>\n` : "";
-			if (slide.notes) verse += `<blockquote>${slide.notes}</blockquote>\n`
-			if (group.name) verse += `<h2>${group.name}</h2>\n`
-			for (let i = 1; i <= fields.length; i++) {
-				verse += `<p>${fields[i - 1].trim()}</p>\n`
-			}
-			verses.push(verse);
-		}
-	}
-	return verses;
-}
-
 
 console.log('Fetching presentations...');
 let url = `${BASE_URL}/v1/libraries`;
@@ -49,7 +33,8 @@ for (let library of libraries) {
 		const presentation = await res.json();
 		// console.log('presentation', presentation);
 		const filename = `songs/${library.name}/${song.name}`;
-		// fs.writeFileSync(filename+'.json', JSON.stringify(presentation, '\t', 2));
-		fs.writeFileSync(filename+'.txt', parseProJson(presentation).join('\n'));
+		// Convert the ProPresenter presentation to lenverse plain text via the
+		// shared model (read → write), so format logic lives in one place.
+		fs.writeFileSync(filename+'.txt', writeText(readProPresenter(presentation)));
 	}
 }
