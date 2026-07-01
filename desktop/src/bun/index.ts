@@ -1,7 +1,9 @@
 // LenVerse desktop shell.
 //
 // Spawns the bun file/WS server as a child process, waits for it to bind,
-// then opens a native window onto the modules home screen.
+// then opens a native window onto the song dashboard. Dashboards and graphics
+// are reachable through the native system menu (built below) rather than the
+// HTML nav bar — that nav bar stays on the home screen for browser clients.
 
 import { BrowserWindow, ApplicationMenu, Utils, type ApplicationMenuItemConfig } from "electrobun/bun";
 import { spawn, type Subprocess } from "bun";
@@ -13,6 +15,10 @@ import { homedir } from "node:os";
 const HOST = process.env.LENVERSE_HOST ?? "127.0.0.1";
 const PORT = process.env.LENVERSE_PORT ?? "5005";
 const URL  = `http://${HOST}:${PORT}/`;
+
+// The window opens straight onto the song dashboard; dashboards and graphics
+// are listed in the native system menu (see buildMenu) instead of the HTML nav.
+const DEFAULT_VIEW = "modules/song/dashboard/index.html";
 
 const BUNDLED_SERVER = resolve(import.meta.dir, "../server/server.ts");
 const BUNDLED = existsSync(BUNDLED_SERVER);
@@ -165,7 +171,7 @@ await startServer();
 
 const win = new BrowserWindow({
   title: "LenVerse",
-  url: URL,
+  url: `${URL}${DEFAULT_VIEW}`,
   frame: { width: 1200, height: 800, x: 200, y: 120 },
 });
 

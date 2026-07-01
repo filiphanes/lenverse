@@ -127,6 +127,7 @@
 		}
 
 		connectToFileWebSocket("/var/song/path.txt", async data => {
+			data = data.trim();
 			if (currentSongPath == data) return;
 			currentSongPath = data;
 			verses = await parseSong(currentSongPath) || [];

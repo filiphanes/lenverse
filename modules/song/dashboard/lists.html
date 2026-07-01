@@ -40,12 +40,13 @@
 		const changed = listPath !== newListPath;
 		listPath = newListPath;
 		updateListContent = connectToFileWebSocket(`/var/list/${newListPath}`, async data => {
-			currentList = data.trim() ? data.trim().split("\n") : [];
+			const lines = data.trim().split(/\r?\n/).filter(Boolean);
+			currentList = lines;
 			songIndex = currentList.indexOf(songPath);
 			renderSongList(currentList);
 		});
 		const data = await GET(`/var/list/${newListPath}`);
-		currentList = data.trim() ? data.trim().split("\n") : [];
+		currentList = data.trim().split(/\r?\n/).filter(Boolean);
 		songIndex = currentList.indexOf(songPath);
 		renderSongList(currentList);
 		if (changed) {
@@ -54,6 +55,7 @@
 	})
 
 	const updateSongPath = connectToFileWebSocket("/var/song/path.txt", data => {
+		data = data.trim();
 		if (songPath == data) return;  // avoid feedback loop
 		songPath = data;
 		if (currentList === null) return; // when initializing

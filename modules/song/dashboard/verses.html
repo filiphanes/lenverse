@@ -23,13 +23,14 @@
 		let verseIndex = 0;
 		let hidden = false;
 
-		connectToFileWebSocket("/var/song/path.txt", async data => {
-			if (currentSongPath == data) return;
-			currentSongPath = data;
-			verses = await parseSong(currentSongPath) || [];
-			renderVerses();
-			updateVerseIndex(-1);
-		});
+	connectToFileWebSocket("/var/song/path.txt", async data => {
+		data = data.trim();
+		if (currentSongPath == data) return;
+		currentSongPath = data;
+		verses = (await parseSong(currentSongPath)) || [];
+		renderVerses();
+		updateVerseIndex(-1);
+	});
 
 		const updateVerseIndex = connectToFileWebSocket("/var/song/verseindex.txt", data => {
 			if (verseIndex === +data) return;

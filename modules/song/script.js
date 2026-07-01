@@ -193,6 +193,134 @@ function parseOpenLyricsXml(xml) {
 	}
 }
 
+// --- XML -> plain text -----------------------------------------------------
+// The lenverse plain-text song format is one block per verse, blocks separated
+// by a blank line, each block optionally starting with `[NAME]`:
+//
+//   [V1]
+//   first line of the verse
+//   second line
+//
+//   [C]
+//   chorus line
+//
+// These converters turn OpenLyrics / OpenSong XML into that format so a song
+// can be saved as a normal editable .txt (the inverse direction of the parse*
+// functions above, which build HTML for display).
+
+// Walk a DOM node, returning its text. `<br/>` becomes a newline; `<chord>` and
+// `<comment>` are dropped so the output is clean lyrics.
+function nodeToText(node) {
+	let text = '';
+	for (const child of node.childNodes) {
+		if (child.nodeType === Node.TEXT_NODE) {
+			text += child.textContent;
+		} else if (child.nodeType === Node.ELEMENT_NODE) {
+			const tag = child.localName || child.nodeName.toLowerCase();
+			if (tag === 'br') text += '\n';
+			else if (tag === 'chord' || tag === 'comment') continue;
+			else text += nodeToText(child);
+		}
+	}
+	return text;
+}
+
+// Normalize a verse body: trim each line, drop blanks (a blank line inside a
+// block would otherwise split it into two verses).
+function normalizeVerseBody(parts) {
+	return parts
+		.join('\n')
+		.split('\n')
+		.map(line => line.trim())
+		.filter(line => line.length)
+		.join('\n');
+}
+
+// Convert an OpenLyrics XML string (or parsed Document) to plain text.
+// Verses are emitted once each, ordered by <verseOrder> first, then by document
+// order for any verses not listed there.
+function openLyricsToText(raw) {
+	const xml = (typeof raw === 'string')
+		? new DOMParser().parseFromString(raw, 'application/xml')
+		: raw;
+	const ns = 'http://openlyrics.info/namespace/2009/song';
+	const orderEl = xml.getElementsByTagNameNS(ns, 'verseOrder')[0];
+	const order = orderEl
+		? orderEl.textContent.trim().toUpperCase().split(/\s+/).filter(Boolean)
+		: [];
+	const verses = {};       // NAME -> body text
+	const seen = new Set();
+	const ordered = [];
+	const note = (name) => { if (name && !seen.has(name)) { seen.add(name); ordered.push(name); } };
+	order.forEach(note);     // verseOrder sets the desired order
+	for (const verse of xml.getElementsByTagNameNS(ns, 'verse')) {
+		const name = (verse.getAttribute('name') || '').toUpperCase();
+		const parts = [];
+		for (const linesEl of verse.getElementsByTagNameNS(ns, 'lines')) {
+			parts.push(nodeToText(linesEl));
+		}
+		const body = normalizeVerseBody(parts);
+		if (!body) continue;
+		verses[name] = verses[name] ? verses[name] + '\n' + body : body;
+		note(name);           // append if it was missing from verseOrder
+	}
+	return ordered
+		.filter(name => verses[name])
+		.map(name => (name ? `[${name}]\n` : '') + verses[name])
+		.join('\n\n') + '\n';
+}
+
+// Convert an OpenSong XML string (or parsed Document) to plain text.
+// OpenSong stores lyrics as a text blob inside <lyrics> with `[label]` markers
+// and line-type prefixes (`.` chords, `;`/`|` comments, leading space lyrics).
+function openSongToText(raw) {
+	const xml = (typeof raw === 'string')
+		? new DOMParser().parseFromString(raw, 'application/xml')
+		: raw;
+	const presEl = xml.getElementsByTagName('presentation')[0];
+	const order = presEl
+		? presEl.textContent.trim().toUpperCase().split(/\s+/).filter(Boolean)
+		: [];
+	const lyricsEl = xml.getElementsByTagName('lyrics')[0];
+	const verses = {};
+	const seen = new Set();
+	const ordered = [];
+	const note = (name) => { if (name && !seen.has(name)) { seen.add(name); ordered.push(name); } };
+	order.forEach(note);
+	if (lyricsEl) {
+		let name = '';
+		let lines = [];
+		const flush = () => {
+			const body = normalizeVerseBody(lines);
+			if (body) verses[name] = verses[name] ? verses[name] + '\n' + body : body;
+			lines = [];
+		};
+		for (const lineRaw of lyricsEl.textContent.split('\n')) {
+			if (!lineRaw.trim()) continue;
+			const c = lineRaw[0];
+			if (c === '[') { flush(); name = lineRaw.replace(/[\[\]]/g, '').trim().toUpperCase(); note(name); }
+			else if (c === '.' || c === ';' || c === '|') continue; // chords / comments
+			else lines.push(lineRaw);
+		}
+		flush();
+	}
+	Object.keys(verses).forEach(note);
+	return ordered
+		.filter(name => verses[name])
+		.map(name => (name ? `[${name}]\n` : '') + verses[name])
+		.join('\n\n') + '\n';
+}
+
+// Detect which XML dialect a song is in and convert it to plain text.
+function songXmlToText(raw) {
+	const xml = (typeof raw === 'string')
+		? new DOMParser().parseFromString(raw, 'application/xml')
+		: raw;
+	const ns = 'http://openlyrics.info/namespace/2009/song';
+	if (xml.getElementsByTagNameNS(ns, 'lyrics').length) return openLyricsToText(xml);
+	return openSongToText(xml);
+}
+
 function parseMarkdown(md) {
 	const verses = {};
 	const verseOrder = [];
@@ -252,19 +380,21 @@ function parseText(data) {
 async function parseSong(filename, raw) {
 	if (!filename) return [];
 	if (!raw) raw = await GET(`/songs/${encodeURIComponent(filename)}`);
-	if (raw.startsWith("<?xml ")) {
+	if (!raw) return [];
+
+	let verses;
+	if (raw.startsWith("<?xml")) {
 		const parser = new DOMParser();
 		const xml = parser.parseFromString(raw, "application/xml");
-		let verses = [];
 		try {
 			verses = parseOpenLyricsXml(xml);
-			console.log('Parsed as OpenLyrics XML');
-		} catch (error) {
-			console.error(error);
-		}
-		if (!verses.length) {
-			verses = parseOpenSongXml(xml);
-			console.log('Parsed as OpenSong XML');
+			if (verses && verses.length) console.log('Parsed as OpenLyrics XML');
+		} catch (error) { console.error(error); }
+		if (!verses || !verses.length) {
+			try {
+				verses = parseOpenSongXml(xml);
+				if (verses && verses.length) console.log('Parsed as OpenSong XML');
+			} catch (error) { console.error(error); }
 		}
 	} else if (filename.endsWith('.md')) {
 		verses = parseMarkdown(raw);
@@ -277,7 +407,7 @@ async function parseSong(filename, raw) {
 		verses = parseText(raw);
 		console.log('Parsed as Text');
 	}
-	return verses;
+	return verses || [];
 }
 
 function normalizeText(text) {

@@ -39,6 +39,7 @@
 	<section id="controls">
 		<button id="save" title="Save" onclick="save()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M840-680v480q0 33-23 57t-57 23H200q-33 0-56-23t-24-57v-560q0-33 24-56t56-24h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z"/></svg></button>
 		<button id="raw" title="Raw" onclick="toggleRaw()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M320-240 80-480l240-240 57 57-184 184 183 183-56 56Zm320 0-57-57 184-184-183-183 56-56 240 240-240 240Z"/></svg></button>
+		<button id="convert" title="Convert to plain text (.txt)" onclick="convertToText()" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -960 960 960"><path d="M280-280h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0 0v-560 560Z"/></svg></button>
 	</section>
 
 	<script>
@@ -50,6 +51,7 @@
 		}
 		let verses = [];
 		let raw = '';
+		let sourceRaw = '';
 
 		async function renderVerses() {
 			verses = await parseSong(filename, raw) || [];
@@ -89,6 +91,28 @@
 			console.log('Saved', filename);
 		}
 
-		renderVerses();
+		// Convert an OpenLyrics/OpenSong XML song to plain text and save it as a
+		// sibling .txt file (non-destructive: the original .xml is kept).
+		async function convertToText() {
+			if (!filename.toLowerCase().endsWith('.xml') || !sourceRaw) return;
+			const text = songXmlToText(sourceRaw);
+			if (!text.trim()) { console.warn('Nothing to convert'); return; }
+			const txtPath = filename.replace(/\.[^.]+$/, '.txt');
+			await PUT(`/songs/${encodeURIComponent(txtPath)}`, text);
+			console.log('Converted', filename, '→', txtPath);
+			location.hash = encodeURIComponent(txtPath);
+			location.reload();
+		}
+
+		async function load() {
+			if (!filename) return;
+			sourceRaw = await GET(`/songs/${encodeURIComponent(filename)}`) || '';
+			raw = sourceRaw;
+			document.getElementById('convert').style.display =
+				filename.toLowerCase().endsWith('.xml') ? '' : 'none';
+			await renderVerses();
+		}
+
+		load();
 	</script>
 </body>
